@@ -37,6 +37,9 @@
       <Component Id="UserscriptTemplate" Guid="*">
         <File Id="UserscriptTemplateFile" Source="$(var.ProjectDir)\ChatGPT-Audio-Ducking.user.js" Name="ChatGPT-Audio-Ducking.template.user.js" KeyPath="yes" />
       </Component>
+      <Component Id="AgentLicense" Guid="*">
+        <File Id="AgentLicenseFile" Source="$(var.ProjectDir)\LICENSE" KeyPath="yes" />
+      </Component>
     </ComponentGroup>
 
     <Component Id="StartMenuShortcuts" Directory="AgentMenuFolder" Guid="*">

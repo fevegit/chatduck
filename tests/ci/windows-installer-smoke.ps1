@@ -97,7 +97,7 @@ try {
     $installAttempted = $true
     Invoke-Msi @('/i', $msi, '/qn', '/norestart', '/l*v', $logInstall)
     if (-not (Test-Path -LiteralPath $agentPath -PathType Leaf)) { throw 'Per-user agent executable was not installed.' }
-    foreach ($file in @('settings.html', 'ChatGPT-Audio-Ducking.template.user.js')) {
+    foreach ($file in @('settings.html', 'ChatGPT-Audio-Ducking.template.user.js', 'LICENSE')) {
         if (-not (Test-Path -LiteralPath (Join-Path $installDir $file) -PathType Leaf)) { throw "Installed file missing: $file" }
     }
     if (-not (Test-Path -LiteralPath $menuDir -PathType Container)) { throw 'Per-user Start Menu shortcut folder was not installed.' }
