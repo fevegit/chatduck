@@ -51,4 +51,4 @@ Open a [GitHub issue](https://github.com/fevegit/chatduck/issues) using a templa
 
 ## License
 
-The MIT license is **proposed and awaiting maintainer approval**. Until approved, this repository is private and the alpha is not publicly released. See `LICENSE.proposed-MIT.txt`; it is not an active license.
+ChatDuck is licensed under the [MIT License](LICENSE). Copyright (c) 2026 ChatDuck contributors.

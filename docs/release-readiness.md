@@ -1,6 +1,6 @@
 # Release readiness — ChatDuck v2.7.5-alpha.1
 
-This is an experimental alpha candidate. The repository remains private while the proposed MIT license awaits explicit approval. Do not describe the product as stable.
+This is an experimental alpha candidate. The maintainer approved the MIT license and public alpha on 2026-11-22. Do not describe the product as stable.
 
 ## Verified from the 2.7.4 baseline
 
@@ -26,10 +26,12 @@ This is an experimental alpha candidate. The repository remains private while th
 
 `.github/workflows/windows-validation.yml` is manual-dispatch only and was not run. Do not trigger it as part of this preparation.
 
-## Before public release
+## Alpha publication decision — 2026-11-22
 
-- Approve the proposed MIT license explicitly, then rename `LICENSE.proposed-MIT.txt` to `LICENSE`.
-- Complete isolated Windows install/upgrade/restart/uninstall validation and real ChatGPT recording checks.
-- Complete Tampermonkey pairing/update and supported player regression checks.
-- Rebuild the public userscript and MSI from the final commit, inspect both, and verify the attached SHA-256 manifest.
-- Review issue/security reporting routes and release notes. Keep the repository private until the license is approved.
+- The maintainer explicitly approved the MIT license and an experimental public alpha; `LICENSE` is now active.
+- Clean Windows installation, MSI upgrade/restart/uninstall, live Tampermonkey pairing, actual ChatGPT dictation, and third-party device/browser compatibility remain unverified and are deliberately deferred to community alpha feedback. Never describe them as tested.
+- The Windows MSI is unsigned; explain potential Windows warnings.
+- The userscript and MSI release assets were built before this license/documentation-only commit. Application source has not changed. Check their existing SHA-256 manifest before publication.
+- The existing annotated tag `v2.7.5-alpha.1` still points to the preceding commit; update it to the final licensed `main` commit before publishing the draft.
+- The release draft's stale license-pending sentence must be removed and replaced with MIT licensing text.
+- Keep GitHub Actions unexecuted as instructed, and publish only after verifying repository visibility, prerelease flag, tag commit, and asset links.

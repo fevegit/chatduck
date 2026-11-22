@@ -51,4 +51,4 @@ Abre un [issue en GitHub](https://github.com/fevegit/chatduck/issues) con una pl
 
 ## Licencia
 
-La licencia MIT está **propuesta y pendiente de aprobación del responsable**. Hasta que se apruebe, el repositorio permanece privado y la alpha no se publica. Consulta `LICENSE.proposed-MIT.txt`; todavía no es una licencia vigente.
+ChatDuck se distribuye bajo la [licencia MIT](LICENSE). Copyright (c) 2026 ChatDuck contributors.
