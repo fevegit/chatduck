@@ -4,6 +4,8 @@
 
 Para YouTube, YouTube Music, Spotify Web, Twitch o Plex Web **no necesitas instalar programas en Windows**: solo Tampermonkey y ChatDuck.
 
+**También para aplicaciones de escritorio (opcional):** el agente Windows permite controlar **aplicaciones compatibles seleccionadas por el usuario**, incluso añadiendo un archivo `.exe` local desde los ajustes. Puedes elegir Pausar o Ducking para cada una. Se han probado versiones anteriores con Spotify Desktop y Plex para Windows. **No hay compatibilidad universal:** para atenuar hace falta una sesión de audio accesible en Windows y, para pausar realmente, controles multimedia compatibles. Algunas aplicaciones se excluyen por seguridad.
+
 > **Alpha experimental — v2.7.5-alpha.2.** ChatDuck sigue en pruebas. Lee las [limitaciones](#estado-de-la-alpha) antes de usarlo como herramienta habitual.
 
 [**Instalar ChatDuck (userscript)**](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) · [English](README.md) · [Reportar un fallo](https://github.com/fevegit/chatduck/issues)
