@@ -10,6 +10,7 @@
 !/release-artifacts/.gitkeep
 /ChatDuck.user.js
 /.tools/
+/.wix/
 *.user
 *.suo
 *.log

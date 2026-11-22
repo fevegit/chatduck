@@ -94,7 +94,7 @@ test("poll results defer rendering if a dialog or text field opens while agent s
   assert.equal(page.renderQueued, true);
 });
 
-test("ChatDuck alpha.2 settings render the resizable modal and show one global Ducking target", async () => {
+test("ChatDuck beta.1 settings render the resizable modal and show one global Ducking target", async () => {
   const settings = core.normalizeSettings({ mode: "duck" });
   const shadow = new ShadowHarness();
   const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
@@ -104,7 +104,7 @@ test("ChatDuck alpha.2 settings render the resizable modal and show one global D
   page.opened = true;
   await page.render();
   const markup = shadow.html.slice(shadow.html.indexOf("</style>"));
-  assert.match(markup, /ChatDuck 2\.7\.5-alpha\.2/);
+  assert.match(markup, /ChatDuck 2\.7\.6-beta\.1/);
   assert.match(markup, /data-size="auto"/);
   assert.match(markup, /data-setting="modalSize"/);
   assert.match(shadow.html, /role="dialog" aria-modal="true"/);
@@ -124,7 +124,7 @@ test("browser-first defaults need no Windows agent and keep advanced controls fo
   const savedAgent = globalThis.AudioDuckAgent;
   globalThis.AudioDuckAgent = {
     configured: false,
-    installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi"
+    installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.7.6-beta.1/ChatDuck-Windows-Agent-2.7.6-beta.1-x64.msi"
   };
   const settings = core.normalizeSettings();
   const errors = [];

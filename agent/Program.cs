@@ -433,7 +433,7 @@ internal sealed class LocalControlServer : IDisposable
         await response.OutputStream.WriteAsync(data);
     }
 
-    private static readonly byte[] PairPage = Encoding.UTF8.GetBytes("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>ChatDuck pairing</title><main><h1>ChatDuck</h1><p data-pair-status>Connecting this browser to ChatDuck Agent…</p><p>Keep this tab open while pairing. Tampermonkey must be installed in this browser. If this remains on Connecting, install the ChatDuck userscript in this browser and start ChatDuck Agent again from the Start menu.</p></main>");
+    private static readonly byte[] PairPage = Encoding.UTF8.GetBytes("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>ChatDuck pairing</title><main><h1>ChatDuck</h1><p>Windows Agent 2.7.6-beta.1</p><p data-pair-status>Connecting this browser to ChatDuck Agent…</p><p>Keep this tab open while pairing. Tampermonkey must be installed in this browser. If this remains on Connecting, install the ChatDuck userscript in this browser and start ChatDuck Agent again from the Start menu.</p></main>");
 
     private async Task ReplyPairPageAsync(HttpListenerResponse response)
     {

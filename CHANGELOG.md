@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.7.6-beta.1 — Beta transition and Windows agent update
+
+- Prepared a newly built generic userscript and Windows Agent MSI for the beta release.
+- Advanced MSI `ProductVersion` to `2.7.6` while retaining the existing UpgradeCode, per-user installation path, executable name, and Start menu identity.
+- Preserved the Tampermonkey name, namespace, legacy filename, and raw `main` update URL so existing installs can update in place.
+- Clarified Browser Mode, optional Windows Agent capabilities, and compatibility limits; added a beta installer notice and updated English/Spanish documentation.
+- Removed retired alpha releases and tags after verifying the beta release and download hashes.
+
 ## 2.7.5-alpha.2 — Browser-first setup
 
 - Put web playback, Pause/Ducking, target volume, and supported player toggles in the main settings view.

@@ -1,35 +1,25 @@
-# Release readiness — ChatDuck v2.7.5-alpha.2
+# Release readiness — ChatDuck v2.7.6-beta.1
 
-This is an experimental alpha candidate. The maintainer approved the MIT license and public alpha on 2026-11-22. Do not describe the product as stable.
+This is an experimental beta, not a stable release. Its MSI is unsigned. Clean Windows installation, upgrade, restart, uninstall, pairing, and compatibility on other computers require isolated-machine testing.
 
-## Verified from the 2.7.4 baseline
+## Compatibility and migration
 
-- The project owner manually tested the previous version with ChatGPT dictation, Spotify Web and desktop, YouTube, Plex Web, and Plex for Windows (Ducking).
-- The settings-panel capture was regenerated headlessly from the current ChatDuck modal preview fixture. It is not a capture from a live ChatGPT or Tampermonkey session.
-- Existing MSI identity was reviewed: the upgrade code, per-user app-data folder, executable name, registry startup value, and internal agent protocol identifiers remain unchanged. MSI ProductVersion is numeric `2.7.5`, newer than `2.7.4`; the display/release version is `2.7.5-alpha.1`.
-- Tampermonkey `@name`, localized names, `@namespace`, and legacy userscript filename are retained to preserve update identity. Product UI and new install assets use ChatDuck. The update URL points to the renamed `fevegit/chatduck` repository and legacy filename.
+- The Tampermonkey identity remains `@name ChatGPT Audio Ducking`, namespace `https://local.chatgpt-audio-ducking/`, legacy script filename, and raw `main` update URL. The existing userscript should update in place and retain its stored preferences; a live Tampermonkey update was not exercised in this headless build.
+- The MSI keeps UpgradeCode `{75A2EB87-3A7D-4A1C-A128-6BD4A88DB93F}`, per-user scope, install folder `ChatGPTAudioDuckingTM`, executable name `ChatGPTAudioDuckingAgent.exe`, and Start menu identity. Its numeric ProductVersion is `2.7.6`, above the previous MSI's `2.7.5`.
+- Browser Mode supports web integrations without the Windows Agent. Native Pause requires a usable Windows media-control session; Ducking requires an accessible audio session. Some applications do not expose those sessions. Protected apps are excluded. Custom executable paths do not imply universal compatibility, and restoration depends on session state remaining recoverable.
+- The project owner manually tested the earlier 2.7.4 build with ChatGPT, Spotify Web and Desktop, YouTube, Plex Web, and Plex for Windows (Ducking). That history does not verify this beta on another machine.
 
-## Candidate checks
+## Validation record
 
-- Alpha.2 rebuilds the generic userscript only. The already published alpha.1 Windows Agent MSI remains an optional download; no installer identity or Windows component was changed.
-- MSI database inspection confirmed `ProductName=ChatDuck Windows Agent`, `ProductVersion=2.7.5`, and the unchanged UpgradeCode `{75A2EB87-3A7D-4A1C-A128-6BD4A88DB93F}`.
-- JavaScript tests: 70 passed. Native volume tests: 20 passed. Native HMAC protocol checks passed.
-- Alpha.2 SHA-256 manifest verified against the rebuilt ChatDuck userscript and unchanged alpha.1 MSI.
-- The generic userscript header retains the legacy name/namespace and uses the new repository update URL; no per-install token is embedded.
-- Actual MSI install, upgrade, restart, and uninstall on an isolated Windows machine: pending.
-- Real Tampermonkey pairing, microphone recording, and browser/player checks on alpha.2: pending.
-- Update from a real 2.7.4 installation: pending. Do not use the maintainer's daily installation for this test.
-- Clean Windows install and compatibility on other computers: not verified; this limitation must remain prominent in alpha notes.
-- MSI code signing: not configured.
+- Built a fresh generic userscript and Windows x64 MSI locally from this source using WiX Toolset 4.0.3. No alpha MSI was reused.
+- JavaScript tests: **71 passed**. Native audio-volume tests: **20 passed**. Native HMAC protocol checks passed.
+- MSI database inspection (without installing): `ProductName=ChatDuck Windows Agent`, `ProductVersion=2.7.6`, and UpgradeCode `{75A2EB87-3A7D-4A1C-A128-6BD4A88DB93F}`. Its ProductCode differs from alpha.2, and its file table contains the agent executable, settings page, userscript template, and MIT license.
+- The SHA-256 manifest contains exactly the userscript and new MSI; both hashes were recomputed and matched.
+- A pattern scan found no candidate credentials or personal paths in the reachable Git history, tracked working tree, or built userscript/MSI. `.wix/` and `release-artifacts/` remain ignored build outputs.
+- Updated `docs/images/settings-panel.png` from the headless modal preview. This is a fixture rendering, not a capture from live ChatGPT or Tampermonkey.
+- Real ChatGPT recording, live player audio, clean Windows install/upgrade/restart/uninstall, and pairing on another computer were not performed; this environment has no separate Windows test machine. The maintainer's daily Windows installation was not touched.
+- GitHub Actions were not run; the workflow remains manual-dispatch only. Its asset and smoke-test paths now target the beta MSI.
 
-## GitHub Actions
+## Release assets
 
-`.github/workflows/windows-validation.yml` is manual-dispatch only and was not run. Do not trigger it as part of this preparation.
-
-## Alpha.2 scope
-
-- The alpha.2 userscript puts browser controls first, hides Windows-only settings under Advanced for unpaired installations, and skips local agent requests when no pairing token is configured.
-- Tampermonkey update identity, stored settings, per-player rules, HMAC pairing, and the audio-control engine are retained.
-- The alpha.1 MSI is optional and remains unsigned. Clean installation, upgrade, restart, uninstall, and pairing on an isolated Windows machine are not verified.
-- No microphone recording, live ChatGPT dictation, or audio behavior was exercised in this headless validation.
-- GitHub Actions were not run. This release remains a pre-release, not a stable version.
+The prepared beta assets are `ChatDuck.user.js`, the freshly built `ChatDuck-Windows-Agent-2.7.6-beta.1-x64.msi`, and `SHA256SUMS.txt`. Do not reuse any alpha MSI. Verify the downloaded public assets against the manifest before retiring the alpha releases and tags.

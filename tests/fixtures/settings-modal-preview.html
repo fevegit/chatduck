@@ -19,7 +19,7 @@
   <script>
     const storageKey = "audioDuckingPreviewSettings";
     const defaults = { mode: "duck", targetVolumePercent: 12, language: "en", modalSize: "large", playerRules: { plexWeb: { mode: "pause" } }, windowsApps: [{ path: "C:\\Program Files\\Plex\\Plex\\Plex.exe", enabled: true, appUserModelIds: [] }], customSites: [{ domain: "media.example.org", enabled: true }], plexOrigins: ["http://192.168.1.25:32400"] };
-    window.AudioDuckAgent = { configured: false, installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi" };
+    window.AudioDuckAgent = { configured: false, installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.7.6-beta.1/ChatDuck-Windows-Agent-2.7.6-beta.1-x64.msi" };
     let settings = AudioDuckCore.normalizeSettings(JSON.parse(localStorage.getItem(storageKey) || JSON.stringify(defaults)));
     const page = new AudioDuckSettingsPage.SettingsPage({
       doc: document,
