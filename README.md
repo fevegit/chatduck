@@ -1,54 +1,61 @@
 # ChatDuck
 
-> **ALPHA — v2.7.5-alpha.1.** This is an experimental community build. A clean Windows agent installation and compatibility on other computers have not been fully verified. Expect issues and share feedback before relying on it.
+**Automatically pause or lower your music while you use ChatGPT voice input.**
 
-**Audio ducking for ChatGPT voice input.** ChatDuck pauses or lowers selected players while you dictate. The Tampermonkey userscript runs locally; an optional Windows agent adds selected desktop players.
+No Windows app needed for YouTube, YouTube Music, Spotify Web, Twitch or Plex Web: **just Tampermonkey and ChatDuck**.
+
+> **Experimental alpha — v2.7.5-alpha.1.** ChatDuck is still being tested. See [known limitations](#alpha-status) before relying on it.
+
+[**Install ChatDuck (userscript)**](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) · [Español](README.es.md) · [Report a bug](https://github.com/fevegit/chatduck/issues)
+
+## Get started — 2 steps
+
+1. **Install [Tampermonkey](https://www.tampermonkey.net/)** for Firefox, Chrome or Edge (skip this if you already have it).
+2. **[Install ChatDuck](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js)** and approve the script in Tampermonkey.
+
+**That's it for browser players.** Open [ChatGPT](https://chatgpt.com/) and your supported music/video site in the **same browser**, then start using voice dictation. ChatDuck can automatically pause playback or lower its volume, and restore it when dictation ends.
+
+To change the default behavior, open **Tampermonkey → ChatGPT Audio Ducking → Open ChatDuck settings**. *“ChatGPT Audio Ducking” is the legacy script name retained so earlier installations can update without creating a duplicate.*
 
 ![ChatDuck settings panel](docs/images/settings-panel.png)
 
-## Install the userscript
+## What works without Windows software?
 
-1. Install [Tampermonkey](https://www.tampermonkey.net/) in Firefox, Chrome, or Edge.
-2. Open the [ChatDuck userscript](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) and confirm Tampermonkey's installation prompt.
-3. Open ChatGPT and a supported player in the same browser. Open ChatDuck from Tampermonkey's menu.
+| Player | Windows app required? |
+| --- | --- |
+| YouTube / YouTube Music (web) | **No** |
+| Spotify Web | **No** |
+| Twitch (web) | **No** |
+| Plex Web | **No** (some self-hosted server addresses need permission setup) |
+| Spotify Desktop / Plex for Windows | **Yes — optional Windows Agent** |
 
-Supported web-player integrations work without the Windows agent. No token or local path setup is needed. ChatGPT and the browser handle microphone access; ChatDuck does not request microphone permission.
+Each player can have its own Pause or Ducking behavior and volume target. Some browsers and player configurations may behave differently; please report problems during the alpha.
 
-## Optional Windows agent
+<details>
+<summary><strong>Advanced: control Windows desktop applications (optional)</strong></summary>
 
-Download the [ChatDuck Windows Agent MSI](https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi) only to control Spotify or another selected desktop player. The installer is per-user and does not require administrator privileges. Run it yourself, then open **ChatDuck Agent** from the Start menu to pair the browser. It never downloads or installs itself silently.
+If you use Spotify **Desktop** or Plex **for Windows**, the userscript alone cannot directly control those native applications. Install the separate Windows agent **only if you need that feature**.
 
-Windows clean-install and upgrade behavior have not yet been verified on an isolated Windows machine. The MSI is unsigned. Startup with Windows is off until enabled in settings. The agent controls selected media sessions and per-application volume; it does not record microphone audio or change master volume.
+1. Download the [ChatDuck Windows Agent MSI (v2.7.5-alpha.1)](https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi).
+2. Run the installer, then open **ChatDuck Agent** from the Windows Start menu.
+3. Follow the pairing steps to connect your browser to the local agent.
 
-## Features
+**Alpha caution:** the MSI is unsigned, may trigger Windows security warnings, and has not yet been tested on a clean Windows machine. Only install it if you understand these limitations. No PowerShell, manually entered tokens or custom paths are required for normal installation. Startup with Windows is disabled by default.
 
-- Pause or duck supported web playback while ChatGPT dictation is active.
-- Optional Windows control for Spotify desktop and selected media applications.
-- Independent pause/duck rules, target volume, fade settings, and player selections.
-- Optional Plex Web origin support and custom website integrations.
-- English and Spanish settings panel.
-- No analytics, telemetry, accounts, or paid features.
+Read [Windows Agent security](docs/SECURITY.md), [permissions](docs/PERMISSIONS.md) and [uninstall instructions](docs/UNINSTALL.md) for technical details.
 
-## Compatibility status
+</details>
 
-The project owner manually tested the previous 2.7.4 version with ChatGPT, Spotify Web and desktop, YouTube, Plex Web, and Plex for Windows (Ducking). That does not verify this alpha's packaging, clean Windows installation, upgrade from an older agent, or compatibility on other computers. See [release readiness](docs/release-readiness.md) for checks still pending.
+## Alpha status
 
-The Tampermonkey script keeps its legacy manager name and update identity so existing installations can receive updates without creating a second script entry. The product, settings panel, and new installer are branded ChatDuck.
+- The earlier 2.7.4 build was manually tested by its creator with ChatGPT, Spotify Web/Desktop, YouTube, Plex Web and Plex for Windows.
+- **This public alpha has not yet been fully tested** for clean Windows installation, agent upgrades, pairing or end-to-end ChatGPT recording on other machines.
+- ChatDuck is experimental. Please [report reproducible issues](https://github.com/fevegit/chatduck/issues), including browser, Windows version if relevant, player and reproduction steps. Never share pairing codes, tokens, personal paths or unredacted logs.
 
-## Privacy and permissions
+See [v2.7.5-alpha.1 release and downloads](https://github.com/fevegit/chatduck/releases/tag/v2.7.5-alpha.1) and [release-readiness notes](docs/release-readiness.md).
 
-ChatDuck has no analytics or telemetry. The userscript does not access microphone APIs or request microphone permission. The optional Windows agent communicates over local loopback and stores its per-install token in the current user's local app data. Read [Privacy](docs/PRIVACY.md), [Permissions](docs/PERMISSIONS.md), and [Security](docs/SECURITY.md) before enabling agent features.
+## Privacy, uninstall and support
 
-## Uninstall
+ChatDuck runs locally; it has no telemetry, paid features or account requirement. The userscript does not request microphone access. To remove browser integration, uninstall **ChatGPT Audio Ducking** in Tampermonkey. The optional Windows Agent can be removed separately from Windows Settings → Apps. See [Privacy](docs/PRIVACY.md) and the [full uninstall guide](docs/UNINSTALL.md).
 
-- Remove **ChatGPT Audio Ducking** from Tampermonkey's dashboard. This legacy dashboard name is retained for upgrade compatibility.
-- If installed, remove **ChatDuck Windows Agent** from Windows Settings → Apps → Installed apps.
-- See the [uninstall guide](docs/UNINSTALL.md) for details.
-
-## Feedback and support
-
-Open a [GitHub issue](https://github.com/fevegit/chatduck/issues) using a template. Remove usernames, tokens, local paths, and unredacted logs before attaching diagnostics. Support is voluntary through [Ko-fi](https://ko-fi.com/fevee).
-
-## License
-
-ChatDuck is licensed under the [MIT License](LICENSE). Copyright (c) 2026 ChatDuck contributors.
+ChatDuck is free and open source under the [MIT License](LICENSE). Optional donations: [Ko-fi](https://ko-fi.com/fevee).
