@@ -34,7 +34,9 @@ Puedes configurar por separado Pausar o Ducking y el volumen para cada reproduct
 <details>
 <summary><strong>Avanzado: controlar aplicaciones de escritorio de Windows (opcional)</strong></summary>
 
-Si utilizas Spotify **de escritorio** o Plex **para Windows**, Tampermonkey por sí solo no puede controlar directamente esas aplicaciones. Instala el agente de Windows **solo si necesitas esa función**.
+Si utilizas Spotify **de escritorio**, Plex **para Windows** u otro reproductor de escritorio compatible, Tampermonkey por sí solo no puede controlar directamente esas aplicaciones. Instala el agente de Windows **solo si necesitas esa función**.
+
+**No se limita a Spotify y Plex:** después del emparejamiento, abre **Ajustes de ChatDuck → Advanced → Windows apps** (o sus equivalentes en español). Puedes seleccionar aplicaciones detectadas o añadir la ruta de un `.exe` local, activar o desactivar cada aplicación y elegir **Pause** o **Ducking** (y volumen propio) para cada una. El agente controla únicamente las sesiones multimedia/de audio seleccionadas y compatibles; no tiene acceso universal a las funciones de cualquier programa. **No todos los ejecutables funcionarán:** para bajar el volumen hace falta una sesión de audio accesible para Windows y, para pausar/reanudar de verdad, controles multimedia compatibles. Si no se puede pausar, puede aplicarse una alternativa de reducción de volumen según la configuración. Algunas aplicaciones protegidas (incluidos navegadores y aplicaciones de comunicación) están excluidas deliberadamente. El autor probó versiones anteriores con Spotify de escritorio y Plex para Windows; los demás ejecutables siguen sin verificar y agradecemos informes en Issues.
 
 1. Descarga el [agente opcional ChatDuck Windows Agent (v2.7.5-alpha.1)](https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi). Alpha.2 solo actualiza el userscript; este MSI sigue siendo el agente alpha.1.
 2. Ejecútalo y abre **ChatDuck Agent** desde el menú Inicio de Windows.

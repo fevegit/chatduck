@@ -34,7 +34,9 @@ Each player can have its own Pause or Ducking behavior and volume target. Some b
 <details>
 <summary><strong>Advanced: control Windows desktop applications (optional)</strong></summary>
 
-If you use Spotify **Desktop** or Plex **for Windows**, the userscript alone cannot directly control those native applications. Install the separate Windows agent **only if you need that feature**.
+If you use Spotify **Desktop**, Plex **for Windows**, or another compatible Windows desktop player, the userscript alone cannot directly control those native applications. Install the separate Windows agent **only if you need that feature**.
+
+**More than Spotify and Plex:** after pairing, open **ChatDuck settings → Advanced → Windows apps**. You can select detected applications or add a local `.exe` path, enable or disable each application, and choose **Pause** or **Ducking** (and a custom volume target) per app. The agent controls only selected compatible media/audio sessions, not arbitrary application functionality. **Not every executable will work:** volume control requires an accessible Windows audio session; real pause/resume requires compatible Windows media controls. When pause is unavailable, a configured volume-reduction fallback may be used instead. Protected apps (including browsers and communication apps) are deliberately excluded. The creator tested earlier builds with Spotify Desktop and Plex for Windows; other executables remain unverified and should be reported via Issues.
 
 1. Download the [optional ChatDuck Windows Agent MSI (v2.7.5-alpha.1)](https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi). Alpha.2 updates the userscript only; this MSI remains the alpha.1 agent.
 2. Run the installer, then open **ChatDuck Agent** from the Windows Start menu.
