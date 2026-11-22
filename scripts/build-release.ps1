@@ -8,11 +8,11 @@ $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $version = '2.7.5'
 $tools = Join-Path $root '.tools'
-$dotnet = Join-Path $tools 'dotnet\dotnet.exe'
+$localDotnet = Join-Path $tools 'dotnet\dotnet.exe'
+$dotnet = if (Test-Path -LiteralPath $localDotnet) { $localDotnet } else { (Get-Command dotnet -ErrorAction Stop).Source }
 $wix = (Get-Command wix -ErrorAction Stop).Source
 $publish = Join-Path $tools 'publish-win-x64'
 $artifacts = Join-Path $root 'release-artifacts'
-if (-not (Test-Path -LiteralPath $dotnet)) { throw 'Install the .NET 10 SDK in .tools/dotnet before building the release candidate.' }
 
 & (Join-Path $PSScriptRoot 'build-public.ps1') -RepositoryUrl $RepositoryUrl
 New-Item -ItemType Directory -Force -Path $publish, $artifacts | Out-Null
