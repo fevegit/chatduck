@@ -16,6 +16,9 @@ test("defaults to supported players with individual toggles and safe Windows sel
   assert.equal(settings.spotifyDesktop, true);
   assert.equal(settings.voiceMode, false);
   assert.equal(settings.modalSize, "auto");
+  for (const url of ["https://www.youtube.com/watch?v=1", "https://music.youtube.com/watch?v=1", "https://open.spotify.com/track/1", "https://twitch.tv/channel", "https://app.plex.tv/"]) {
+    assert.equal(core.shouldManageWeb(url, settings), true);
+  }
 });
 
 test("normalizes percentages, fade bounds, and excluded domains", () => {

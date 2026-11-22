@@ -51,12 +51,14 @@ test("language preference survives normalization and legacy settings migrate to 
 });
 
 test("modal size and independent target controls have complete English and Spanish labels", () => {
-  for (const key of ["modalSize", "sizeAuto", "sizeCompact", "sizeNormal", "sizeLarge", "dictationVolume", "useGlobalTarget", "useCustomTarget", "customTarget", "effectiveGlobalTarget", "permissionDetails", "agentDetailsTitle", "technicalDetails"]) {
+  for (const key of ["modalSize", "sizeAuto", "sizeCompact", "sizeNormal", "sizeLarge", "dictationVolume", "useGlobalTarget", "useCustomTarget", "customTarget", "effectiveGlobalTarget", "permissionDetails", "agentDetailsTitle", "technicalDetails", "browserModeReady", "browserModeOff", "agentOptionalStatus", "webAdvanced", "desktopAgentPrompt", "agentStepDownload", "agentStepInstall", "agentStepPair"]) {
     assert.ok(i18n.CATALOGS.en[key], `English: ${key}`);
     assert.ok(i18n.CATALOGS.es[key], `Spanish: ${key}`);
   }
   assert.equal(i18n.translate("en", "useGlobalTarget", { value: 10 }), "Use global volume (10%)");
   assert.equal(i18n.translate("es", "useGlobalTarget", { value: 10 }), "Usar volumen global (10 %)");
+  assert.equal(i18n.translate("en", "browserModeReady"), "Browser mode — Ready");
+  assert.equal(i18n.translate("es", "browserModeReady"), "Modo navegador — Listo");
 });
 
 test("removal tooltips and application-path labels are localized", () => {

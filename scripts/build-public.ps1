@@ -6,12 +6,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$version = '2.7.5-alpha.1'
+$version = '2.7.5-alpha.2'
+$agentVersion = '2.7.5-alpha.1'
 $repository = ([Uri]$RepositoryUrl.TrimEnd('/')).AbsolutePath.Trim('/').Split('/')
 if ($repository.Length -ne 2) { throw 'Indica la URL exacta del repositorio GitHub.' }
 $owner, $name = $repository
 $raw = "https://raw.githubusercontent.com/$owner/$name/main/ChatGPT-Audio-Ducking.user.js"
-$installer = "https://github.com/$owner/$name/releases/download/v$version/ChatDuck-Windows-Agent-$version-x64.msi"
+$installer = "https://github.com/$owner/$name/releases/download/v$agentVersion/ChatDuck-Windows-Agent-$agentVersion-x64.msi"
 
 $header = @"
 // ==UserScript==

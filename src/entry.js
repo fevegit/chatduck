@@ -239,6 +239,7 @@
   }
 
   async function nativeCommand(command, values = {}) {
+    if (!root.AudioDuckAgent?.configured) return null;
     const startedAt = monotonicNow();
     try {
       const result = await root.AudioDuckAgent.request({ command, ...values }, command === "status" ? 600 : command === "heartbeat" ? 400 : 1800);

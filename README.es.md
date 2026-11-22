@@ -4,7 +4,7 @@
 
 Para YouTube, YouTube Music, Spotify Web, Twitch o Plex Web **no necesitas instalar programas en Windows**: solo Tampermonkey y ChatDuck.
 
-> **Alpha experimental — v2.7.5-alpha.1.** ChatDuck sigue en pruebas. Lee las [limitaciones](#estado-de-la-alpha) antes de usarlo como herramienta habitual.
+> **Alpha experimental — v2.7.5-alpha.2.** ChatDuck sigue en pruebas. Lee las [limitaciones](#estado-de-la-alpha) antes de usarlo como herramienta habitual.
 
 [**Instalar ChatDuck (userscript)**](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) · [English](README.md) · [Reportar un fallo](https://github.com/fevegit/chatduck/issues)
 
@@ -36,7 +36,7 @@ Puedes configurar por separado Pausar o Ducking y el volumen para cada reproduct
 
 Si utilizas Spotify **de escritorio** o Plex **para Windows**, Tampermonkey por sí solo no puede controlar directamente esas aplicaciones. Instala el agente de Windows **solo si necesitas esa función**.
 
-1. Descarga el [instalador ChatDuck Windows Agent (v2.7.5-alpha.1)](https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi).
+1. Descarga el [agente opcional ChatDuck Windows Agent (v2.7.5-alpha.1)](https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi). Alpha.2 solo actualiza el userscript; este MSI sigue siendo el agente alpha.1.
 2. Ejecútalo y abre **ChatDuck Agent** desde el menú Inicio de Windows.
 3. Sigue las instrucciones de emparejamiento para conectar el navegador con el agente local.
 
@@ -52,7 +52,7 @@ Consulta la [seguridad del agente](docs/SECURITY.md), los [permisos](docs/PERMIS
 - **Esta alpha pública todavía no está totalmente validada** en instalaciones limpias de Windows, actualizaciones del agente, emparejamiento o grabación real de ChatGPT en otros equipos.
 - Es software experimental. Puedes [reportar fallos](https://github.com/fevegit/chatduck/issues) indicando navegador, versión de Windows cuando corresponda, reproductor y pasos para reproducirlos. No adjuntes códigos de emparejamiento, tokens, rutas personales ni logs sin revisar.
 
-Consulta la [Release y descargas de v2.7.5-alpha.1](https://github.com/fevegit/chatduck/releases/tag/v2.7.5-alpha.1) y las [pruebas pendientes](docs/release-readiness.md).
+Consulta la [Release y descargas de v2.7.5-alpha.2](https://github.com/fevegit/chatduck/releases/tag/v2.7.5-alpha.2) y las [pruebas pendientes](docs/release-readiness.md).
 
 ## Privacidad, desinstalación y apoyo
 

@@ -3,11 +3,11 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-test("ChatDuck 2.7.5-alpha.1 metadata keeps update identity, narrow matches, and consent-gated custom sites", () => {
+test("ChatDuck 2.7.5-alpha.2 metadata keeps update identity, narrow matches, and consent-gated custom sites", () => {
   const root = path.join(__dirname, "..");
   const source = fs.readFileSync(path.join(root, "ChatGPT-Audio-Ducking.user.js"), "utf8");
   const header = source.slice(0, source.indexOf("// ==/UserScript=="));
-  assert.match(header, /@version\s+2\.7\.5-alpha\.1/);
+  assert.match(header, /@version\s+2\.7\.5-alpha\.2/);
   assert.match(header, /@name\s+ChatGPT Audio Ducking/);
   assert.match(header, /@name:en\s+ChatGPT Audio Ducking/);
   assert.match(header, /@name:es\s+Audio Ducking para ChatGPT/);
@@ -30,8 +30,9 @@ test("ChatDuck 2.7.5-alpha.1 metadata keeps update identity, narrow matches, and
   const entry = fs.readFileSync(path.join(root, "src", "entry.js"), "utf8");
   assert.match(entry, /GM_registerMenuCommand\(root\.AudioDuckI18n\.translate\(settings\.language, "menuSettings"\)/);
   assert.match(entry, /settingsPage\.open\(\)/);
+  assert.match(entry, /async function nativeCommand\(command, values = \{\}\) \{\s*if \(!root\.AudioDuckAgent\?\.configured\) return null;/);
   assert.doesNotMatch(entry, /GM_openInTab/);
   const release = fs.readFileSync(path.join(root, "release-artifacts", "ChatDuck.user.js"), "utf8");
-  assert.match(release.slice(0, release.indexOf("// ==/UserScript==")), /@version\s+2\.7\.5-alpha\.1/);
+  assert.match(release.slice(0, release.indexOf("// ==/UserScript==")), /@version\s+2\.7\.5-alpha\.2/);
   assert.doesNotMatch(release, /Authorization:\s*`Bearer\s*\$\{TOKEN\}|__AGENT_TOKEN__|[a-f0-9]{64}/i);
 });

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.7.5-alpha.2 — Browser-first setup
+
+- Put web playback, Pause/Ducking, target volume, and supported player toggles in the main settings view.
+- Fold Windows Agent, desktop controls, custom sites, permissions, and technical settings under Advanced; open it by default for a paired agent.
+- Show a positive browser-ready state when supported web integrations are enabled, and stop sending local agent requests when no pairing token is configured.
+- Keep the alpha.1 Windows Agent MSI as an optional, clearly versioned download; no MSI rebuild was needed.
+
 ## 2.7.5-alpha.1 — ChatDuck public alpha candidate
 
 - Rebranded the product, settings panel, Windows Agent installer, Start menu shortcut, and documentation as ChatDuck.

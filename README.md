@@ -4,7 +4,7 @@
 
 No Windows app needed for YouTube, YouTube Music, Spotify Web, Twitch or Plex Web: **just Tampermonkey and ChatDuck**.
 
-> **Experimental alpha — v2.7.5-alpha.1.** ChatDuck is still being tested. See [known limitations](#alpha-status) before relying on it.
+> **Experimental alpha — v2.7.5-alpha.2.** ChatDuck is still being tested. See [known limitations](#alpha-status) before relying on it.
 
 [**Install ChatDuck (userscript)**](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) · [Español](README.es.md) · [Report a bug](https://github.com/fevegit/chatduck/issues)
 
@@ -36,7 +36,7 @@ Each player can have its own Pause or Ducking behavior and volume target. Some b
 
 If you use Spotify **Desktop** or Plex **for Windows**, the userscript alone cannot directly control those native applications. Install the separate Windows agent **only if you need that feature**.
 
-1. Download the [ChatDuck Windows Agent MSI (v2.7.5-alpha.1)](https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi).
+1. Download the [optional ChatDuck Windows Agent MSI (v2.7.5-alpha.1)](https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi). Alpha.2 updates the userscript only; this MSI remains the alpha.1 agent.
 2. Run the installer, then open **ChatDuck Agent** from the Windows Start menu.
 3. Follow the pairing steps to connect your browser to the local agent.
 
@@ -52,7 +52,7 @@ Read [Windows Agent security](docs/SECURITY.md), [permissions](docs/PERMISSIONS.
 - **This public alpha has not yet been fully tested** for clean Windows installation, agent upgrades, pairing or end-to-end ChatGPT recording on other machines.
 - ChatDuck is experimental. Please [report reproducible issues](https://github.com/fevegit/chatduck/issues), including browser, Windows version if relevant, player and reproduction steps. Never share pairing codes, tokens, personal paths or unredacted logs.
 
-See [v2.7.5-alpha.1 release and downloads](https://github.com/fevegit/chatduck/releases/tag/v2.7.5-alpha.1) and [release-readiness notes](docs/release-readiness.md).
+See [v2.7.5-alpha.2 release and downloads](https://github.com/fevegit/chatduck/releases/tag/v2.7.5-alpha.2) and [release-readiness notes](docs/release-readiness.md).
 
 ## Privacy, uninstall and support
 

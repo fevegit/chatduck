@@ -16,8 +16,8 @@ class ShadowHarness {
   set innerHTML(value) {
     this.renderCount++;
     this.html = value;
-    this.details = [...value.matchAll(/<details\b[^>]*data-section="([^"]+)"/g)]
-      .map((match) => ({ dataset: { section: match[1] }, open: false }));
+    this.details = [...value.matchAll(/<details\b[^>]*data-section="([^"]+)"[^>]*>/g)]
+      .map((match) => ({ dataset: { section: match[1] }, open: /\sopen(?:\s|>)/.test(match[0]) }));
   }
 }
 
@@ -94,7 +94,7 @@ test("poll results defer rendering if a dialog or text field opens while agent s
   assert.equal(page.renderQueued, true);
 });
 
-test("ChatDuck alpha settings render the resizable modal and show one global Ducking target", async () => {
+test("ChatDuck alpha.2 settings render the resizable modal and show one global Ducking target", async () => {
   const settings = core.normalizeSettings({ mode: "duck" });
   const shadow = new ShadowHarness();
   const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
@@ -104,16 +104,109 @@ test("ChatDuck alpha settings render the resizable modal and show one global Duc
   page.opened = true;
   await page.render();
   const markup = shadow.html.slice(shadow.html.indexOf("</style>"));
-  assert.match(markup, /ChatDuck 2\.7\.5-alpha\.1/);
+  assert.match(markup, /ChatDuck 2\.7\.5-alpha\.2/);
   assert.match(markup, /data-size="auto"/);
   assert.match(markup, /data-setting="modalSize"/);
   assert.match(shadow.html, /role="dialog" aria-modal="true"/);
   assert.match(markup, /data-setting="targetVolumePercent"/);
   assert.equal((markup.match(/data-setting="targetVolumePercent"/g) || []).length, 1);
-  assert.match(markup, /<p class="agent-status" role="status">/);
+  assert.match(shadow.html, /@media\(max-width:620px\)/);
+  assert.match(shadow.html, /@media\(max-width:390px\)/);
+  assert.match(markup, /data-language/);
+  assert.match(markup, /class="browser-status" data-ready="true" role="status"/);
+  assert.match(markup, /Browser mode — Ready/);
   assert.doesNotMatch(markup, /Prueba de pausa|Restaurar reproducción|HTML5 detectado|class="errors"/);
   assert.doesNotMatch(markup, /data-action="manual-(pause|restore)"/);
   assert.equal(shadow.querySelector('details[data-section="advanced"]').open, false);
+});
+
+test("browser-first defaults need no Windows agent and keep advanced controls folded", async () => {
+  const savedAgent = globalThis.AudioDuckAgent;
+  globalThis.AudioDuckAgent = {
+    configured: false,
+    installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi"
+  };
+  const settings = core.normalizeSettings();
+  const errors = [];
+  const shadow = new ShadowHarness();
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
+    doc: {}, getSettings: () => settings, saveSettings: async () => {},
+    getState: async () => ({ agent: { ok: false, error: "No instalado" } }), onError: (error) => errors.push(error)
+  });
+  page.shadow = shadow; page.opened = true;
+  try {
+    await page.render();
+    for (const url of ["https://www.youtube.com/watch?v=1", "https://open.spotify.com/track/1", "https://twitch.tv/channel", "https://app.plex.tv/"]) {
+      assert.equal(core.shouldManageWeb(url, settings), true);
+    }
+    assert.equal(shadow.querySelector('details[data-section="advanced"]').open, false);
+    assert.match(shadow.html, /Browser mode — Ready/);
+    assert.doesNotMatch(shadow.html, /Windows agent disconnected/);
+    assert.match(shadow.html, /data-web-platform="youtube"/);
+    assert.match(shadow.html, /data-web-platform="spotifyWeb"/);
+    assert.match(shadow.html, /data-setting="webIntegration"/);
+    assert.match(shadow.html, /Want to control Spotify Desktop or Plex for Windows\?/);
+    assert.doesNotMatch(shadow.html, /<dialog[^>]*open/);
+    assert.deepEqual(errors, []);
+  } finally {
+    if (savedAgent === undefined) delete globalThis.AudioDuckAgent;
+    else globalThis.AudioDuckAgent = savedAgent;
+  }
+});
+
+test("configured Windows agent stays visible and reports its real connection state", async () => {
+  const savedAgent = globalThis.AudioDuckAgent;
+  globalThis.AudioDuckAgent = { configured: true };
+  const shadow = new ShadowHarness();
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
+    doc: {}, getSettings: () => core.normalizeSettings(), saveSettings: async () => {},
+    getState: async () => ({ agent: { ok: true, autostartEnabled: false }, apps: [] })
+  });
+  page.shadow = shadow; page.opened = true;
+  try {
+    await page.render();
+    assert.equal(shadow.querySelector('details[data-section="advanced"]').open, true);
+    assert.match(shadow.html, /Windows agent connected/);
+    assert.match(shadow.html, /data-action="add-app"/);
+    assert.doesNotMatch(shadow.html, /Want to control Spotify Desktop or Plex for Windows\?/);
+  } finally {
+    if (savedAgent === undefined) delete globalThis.AudioDuckAgent;
+    else globalThis.AudioDuckAgent = savedAgent;
+  }
+});
+
+test("configured but offline Windows agent stays visible and shows its actual status", async () => {
+  const savedAgent = globalThis.AudioDuckAgent;
+  globalThis.AudioDuckAgent = { configured: true };
+  const shadow = new ShadowHarness();
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
+    doc: {}, getSettings: () => core.normalizeSettings(), saveSettings: async () => {},
+    getState: async () => ({ agent: { ok: false, error: "offline" }, apps: [] })
+  });
+  page.shadow = shadow; page.opened = true;
+  try {
+    await page.render();
+    assert.equal(shadow.querySelector('details[data-section="advanced"]').open, true);
+    assert.match(shadow.html, /Windows agent disconnected/);
+  } finally {
+    if (savedAgent === undefined) delete globalThis.AudioDuckAgent;
+    else globalThis.AudioDuckAgent = savedAgent;
+  }
+});
+
+test("saving browser preferences preserves existing per-player and language settings", async () => {
+  let settings = core.normalizeSettings({ mode: "duck", targetVolumePercent: 17, language: "es", spotifyDesktop: false, playerRules: { plexWeb: { mode: "pause" } }, customSites: [{ domain: "media.example.org", enabled: true }] });
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
+    doc: {}, getSettings: () => settings, saveSettings: async (next) => { settings = core.normalizeSettings(next); }, getState: async () => ({})
+  });
+  await page.save({ ...settings, webIntegration: false });
+  assert.equal(settings.webIntegration, false);
+  assert.equal(settings.targetVolumePercent, 17);
+  assert.equal(settings.mode, "duck");
+  assert.equal(settings.language, "es");
+  assert.equal(settings.spotifyDesktop, false);
+  assert.deepEqual(settings.playerRules.plexWeb, { mode: "pause", targetVolumePercent: null, targetVolumeSource: "global" });
+  assert.deepEqual(settings.customSites, [{ domain: "media.example.org", enabled: true }]);
 });
 
 test("Windows application rows expose a compact, keyboard-accessible trash action and full path", async () => {
@@ -222,7 +315,8 @@ test("settings expose custom player volume, compact agent state, and one fixed K
   assert.match(markup, /data-rule-target="youtube" value="15"/);
   assert.match(markup, /data-rule-target-source="youtube"/);
   assert.match(markup, /value="custom" selected>Custom/);
-  assert.match(markup, /Windows agent disconnected/);
+  assert.match(markup, /Browser mode — Ready/);
+  assert.doesNotMatch(markup, /Windows agent disconnected/);
   assert.match(markup, /https:\/\/ko-fi\.com\/fevee/);
   assert.match(markup, /data-action="remove-site"[^>]*title="Remove site"/);
   assert.match(markup, /data-action="remove-plex-origin"[^>]*title="Remove server"/);
