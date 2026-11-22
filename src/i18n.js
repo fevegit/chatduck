@@ -2,7 +2,7 @@
   "use strict";
 
   const EN = Object.freeze({
-    brand: "Audio Ducking", settings: "Settings", menuSettings: "Open Audio Ducking settings", close: "Close", language: "Language", english: "English", spanish: "Spanish",
+    brand: "ChatDuck", settings: "Settings", menuSettings: "Open ChatDuck settings", close: "Close", language: "Language", english: "English", spanish: "Spanish",
     tagline: "Control playback while you dictate", general: "General", enabled: "Enabled", enabledHint: "Automatically control playback during dictation",
     modalSize: "Panel size", sizeAuto: "Auto", sizeCompact: "Compact", sizeNormal: "Normal", sizeLarge: "Large",
     activeLock: "Settings are locked while dictation is active.", whenDictating: "When dictation starts", pause: "Pause", duck: "Ducking",
@@ -11,7 +11,7 @@
     youtube: "YouTube", youtubeMusic: "YouTube Music", spotifyWeb: "Spotify Web", twitch: "Twitch", plexWeb: "Plex Web", behavior: "Behavior", mode: "Mode",
     inherit: "General", target: "Target", ownTarget: "Use custom target", dictationVolume: "Volume while dictating", useGlobalTarget: "Use global volume ({value}%)", useCustomTarget: "Custom", customTarget: "Custom volume", effectiveGlobalTarget: "Using global volume: {value}%", remove: "Remove", add: "Add", added: "Added", updateIdentity: "Update identity",
     plexServers: "Local Plex servers", addPlexOrigin: "+ Add server origin", emptyPlexOrigins: "Add the exact origin of your local server.",
-    plexPermission: "Requires exact host permission in Tampermonkey", plexHostHelp: "Audio Ducking only controls local HTML5 playback. For each server, add the shown line in Tampermonkey → Edit. Firefox may ignore ports in match rules; runtime control still checks the exact origin.",
+    plexPermission: "Requires exact host permission in Tampermonkey", plexHostHelp: "ChatDuck only controls local HTML5 playback. For each server, add the shown line in Tampermonkey → Edit. Firefox may ignore ports in match rules; runtime control still checks the exact origin.",
     otherSites: "Custom sites", otherSitesHint: "Only domains you add", addSite: "+ Add website", authorizeSites: "Authorize sites in Tampermonkey",
     customShortHelp: "Add a compatible website and allow its host access in Tampermonkey.", customPermissionHelp: "In Tampermonkey, open the userscript editor and add the exact match line shown for the site to its header. If you use the optional agent, the Authorize sites button can prepare these permissions for you.", permissionDetails: "Permission and setup details",
     emptySites: "No sites added yet.", windowsApps: "Windows apps", spotifyDesktop: "Spotify desktop", windowsMedia: "Windows Media Control · per-app volume",
@@ -34,7 +34,7 @@
   });
 
   const ES = Object.freeze({
-    brand: "Audio Ducking", settings: "Configuración", menuSettings: "Abrir configuración de Audio Ducking", close: "Cerrar", language: "Idioma", english: "Inglés", spanish: "Español",
+    brand: "ChatDuck", settings: "Configuración", menuSettings: "Abrir configuración de ChatDuck", close: "Cerrar", language: "Idioma", english: "Inglés", spanish: "Español",
     tagline: "Controla la reproducción mientras dictas", general: "General", enabled: "Activado", enabledHint: "Controla la reproducción automáticamente durante el dictado",
     modalSize: "Tamaño del panel", sizeAuto: "Automático", sizeCompact: "Compacto", sizeNormal: "Normal", sizeLarge: "Grande",
     activeLock: "La configuración está bloqueada mientras el dictado está activo.", whenDictating: "Al empezar a dictar", pause: "Pausar", duck: "Ducking",
@@ -43,7 +43,7 @@
     youtube: "YouTube", youtubeMusic: "YouTube Music", spotifyWeb: "Spotify Web", twitch: "Twitch", plexWeb: "Plex Web", behavior: "Comportamiento", mode: "Modo",
     inherit: "General", target: "Objetivo", ownTarget: "Usar objetivo propio", dictationVolume: "Volumen durante el dictado", useGlobalTarget: "Usar volumen global ({value} %)", useCustomTarget: "Personalizado", customTarget: "Volumen personalizado", effectiveGlobalTarget: "Volumen global aplicado: {value} %", remove: "Eliminar", add: "Añadir", added: "Añadida", updateIdentity: "Actualizar identidad",
     plexServers: "Servidores Plex locales", addPlexOrigin: "+ Añadir servidor", emptyPlexOrigins: "Añade el origen exacto de tu servidor local.",
-    plexPermission: "Requiere autorización del host en Tampermonkey", plexHostHelp: "Audio Ducking solo controla la reproducción HTML5 local. Para cada servidor, añade la línea indicada en Tampermonkey → Editar. Firefox puede ignorar el puerto en la regla; el control comprueba el origen exacto.",
+    plexPermission: "Requiere autorización del host en Tampermonkey", plexHostHelp: "ChatDuck solo controla la reproducción HTML5 local. Para cada servidor, añade la línea indicada en Tampermonkey → Editar. Firefox puede ignorar el puerto en la regla; el control comprueba el origen exacto.",
     otherSites: "Sitios personalizados", otherSitesHint: "Solo los dominios que añadas", addSite: "+ Añadir sitio web", authorizeSites: "Autorizar sitios en Tampermonkey",
     customShortHelp: "Añade un sitio compatible y autoriza su acceso de host en Tampermonkey.", customPermissionHelp: "En Tampermonkey, abre el editor del userscript y añade al encabezado la regla exacta que aparece para cada sitio. Si usas el agente opcional, el botón Autorizar sitios puede preparar esos permisos.", permissionDetails: "Detalles de permisos e instalación",
     emptySites: "Aún no hay sitios añadidos.", windowsApps: "Aplicaciones Windows", spotifyDesktop: "Spotify de escritorio", windowsMedia: "Control multimedia de Windows · volumen por aplicación",

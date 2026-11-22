@@ -94,7 +94,7 @@ test("poll results defer rendering if a dialog or text field opens while agent s
   assert.equal(page.renderQueued, true);
 });
 
-test("2.7.5 settings render the resizable modal and show one global Ducking target", async () => {
+test("ChatDuck alpha settings render the resizable modal and show one global Ducking target", async () => {
   const settings = core.normalizeSettings({ mode: "duck" });
   const shadow = new ShadowHarness();
   const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
@@ -104,7 +104,7 @@ test("2.7.5 settings render the resizable modal and show one global Ducking targ
   page.opened = true;
   await page.render();
   const markup = shadow.html.slice(shadow.html.indexOf("</style>"));
-  assert.match(markup, /2\.7\.4/);
+  assert.match(markup, /ChatDuck 2\.7\.5-alpha\.1/);
   assert.match(markup, /data-size="auto"/);
   assert.match(markup, /data-setting="modalSize"/);
   assert.match(shadow.html, /role="dialog" aria-modal="true"/);

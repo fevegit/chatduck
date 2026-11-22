@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible Audio Ducking problem
+description: Report a reproducible ChatDuck problem
 title: "[Bug]: "
 labels: [bug]
 body:
@@ -9,8 +9,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: Audio Ducking version
-      placeholder: 2.7.5
+      label: ChatDuck version
+      placeholder: 2.7.5-alpha.1
     validations:
       required: true
   - type: input

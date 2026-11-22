@@ -43,7 +43,7 @@ jobs:
 
       - name: Build public userscript, Windows agent, MSI, and SHA-256 manifest
         shell: pwsh
-        run: ./scripts/build-release.ps1 -RepositoryUrl 'https://github.com/fevegit/audio-ducking'
+        run: ./scripts/build-release.ps1 -RepositoryUrl 'https://github.com/fevegit/chatduck'
 
       - name: Run JavaScript tests
         run: node --test tests/*.test.cjs
@@ -60,8 +60,8 @@ jobs:
         shell: pwsh
         run: |
           $root = (Resolve-Path 'release-artifacts').Path
-          $userscript = Join-Path $root 'ChatGPT-Audio-Ducking.user.js'
-          $msi = Join-Path $root 'Audio-Ducking-Windows-Agent-2.7.5-x64.msi'
+          $userscript = Join-Path $root 'ChatDuck.user.js'
+          $msi = Join-Path $root 'ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi'
           $manifest = Join-Path $root 'SHA256SUMS.txt'
           foreach ($path in @($userscript, $msi, $manifest)) {
             if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing release file: $([IO.Path]::GetFileName($path))" }
@@ -78,4 +78,4 @@ jobs:
 
       - name: Install, exercise, and uninstall the MSI
         shell: pwsh
-        run: ./tests/ci/windows-installer-smoke.ps1 -MsiPath './release-artifacts/Audio-Ducking-Windows-Agent-2.7.5-x64.msi'
+        run: ./tests/ci/windows-installer-smoke.ps1 -MsiPath './release-artifacts/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi'

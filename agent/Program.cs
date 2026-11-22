@@ -180,7 +180,7 @@ internal sealed class LocalControlServer : IDisposable
                 if (Encoding.UTF8.GetByteCount(pairBody) > 1024) { await ReplyAsync(response, 413, new { error = "Solicitud demasiado grande." }); return; }
                 using var pairDoc = JsonDocument.Parse(pairBody, new JsonDocumentOptions { MaxDepth = 3 });
                 var code = pairDoc.RootElement.TryGetProperty("code", out var codeValue) && codeValue.ValueKind == JsonValueKind.String ? codeValue.GetString() : null;
-                if (!ConsumePairingCode(code)) { await ReplyAsync(response, 401, new { error = "Código caducado o incorrecto. Inicia de nuevo Audio Ducking Agent." }); return; }
+                if (!ConsumePairingCode(code)) { await ReplyAsync(response, 401, new { error = "Código caducado o incorrecto. Inicia de nuevo ChatDuck Agent." }); return; }
                 await ReplyAsync(response, 200, new { ok = true, token = _token });
                 return;
             }
@@ -433,7 +433,7 @@ internal sealed class LocalControlServer : IDisposable
         await response.OutputStream.WriteAsync(data);
     }
 
-    private static readonly byte[] PairPage = Encoding.UTF8.GetBytes("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Audio Ducking pairing</title><main><h1>Audio Ducking</h1><p data-pair-status>Connecting this browser to Audio Ducking Agent…</p><p>Keep this tab open while pairing. Tampermonkey must be installed in this browser. If this remains on Connecting, install the Audio Ducking userscript in this browser and start Audio Ducking Agent again from the Start menu.</p></main>");
+    private static readonly byte[] PairPage = Encoding.UTF8.GetBytes("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>ChatDuck pairing</title><main><h1>ChatDuck</h1><p data-pair-status>Connecting this browser to ChatDuck Agent…</p><p>Keep this tab open while pairing. Tampermonkey must be installed in this browser. If this remains on Connecting, install the ChatDuck userscript in this browser and start ChatDuck Agent again from the Start menu.</p></main>");
 
     private async Task ReplyPairPageAsync(HttpListenerResponse response)
     {

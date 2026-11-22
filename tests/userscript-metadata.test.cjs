@@ -3,24 +3,26 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-test("2.7.5 metadata keeps matches narrow and custom sites consent-gated", () => {
+test("ChatDuck 2.7.5-alpha.1 metadata keeps update identity, narrow matches, and consent-gated custom sites", () => {
   const root = path.join(__dirname, "..");
   const source = fs.readFileSync(path.join(root, "ChatGPT-Audio-Ducking.user.js"), "utf8");
   const header = source.slice(0, source.indexOf("// ==/UserScript=="));
-  assert.match(header, /@version\s+2\.7\.5/);
+  assert.match(header, /@version\s+2\.7\.5-alpha\.1/);
   assert.match(header, /@name\s+ChatGPT Audio Ducking/);
   assert.match(header, /@name:en\s+ChatGPT Audio Ducking/);
   assert.match(header, /@name:es\s+Audio Ducking para ChatGPT/);
-  assert.match(header, /@description\s+Pause or lower selected players while dictating/);
-  assert.match(header, /@description:en\s+Pause or lower selected players while dictating/);
-  assert.match(header, /@description:es\s+Pausa o atenúa/);
+  assert.match(header, /@namespace\s+https:\/\/local\.chatgpt-audio-ducking\//);
+  assert.match(header, /@description\s+ChatDuck — audio ducking for ChatGPT voice input/);
+  assert.match(header, /@description:en\s+ChatDuck — audio ducking for ChatGPT voice input/);
+  assert.match(header, /@description:es\s+ChatDuck — atenuación/);
   assert.match(header, /@match\s+https:\/\/chatgpt\.com\/\*/);
   assert.match(header, /@match\s+https:\/\/music\.youtube\.com\/\*/);
   assert.match(header, /@match\s+https:\/\/app\.plex\.tv\/\*/);
   assert.match(header, /@match\s+http:\/\/127\.0\.0\.1\/\*/);
   assert.match(header, /@grant\s+GM_unregisterMenuCommand/);
   assert.doesNotMatch(header, /@CUSTOM_SITE_MATCHES@|__AGENT_TOKEN__/);
-  assert.match(header, /@updateURL\s+https:\/\/raw\.githubusercontent\.com\/fevegit\/audio-ducking\//);
+  assert.match(header, /@updateURL\s+https:\/\/raw\.githubusercontent\.com\/fevegit\/chatduck\/main\/ChatGPT-Audio-Ducking\.user\.js/);
+  assert.match(header, /@downloadURL\s+https:\/\/raw\.githubusercontent\.com\/fevegit\/chatduck\/main\/ChatGPT-Audio-Ducking\.user\.js/);
   assert.doesNotMatch(header, /@match\s+\*:\/\/\*\/\*/);
   assert.doesNotMatch(header, /@grant\s+unsafeWindow|@connect\s+\*/);
   assert.doesNotMatch(header, /@grant\s+.*microphone/i);
@@ -29,7 +31,7 @@ test("2.7.5 metadata keeps matches narrow and custom sites consent-gated", () =>
   assert.match(entry, /GM_registerMenuCommand\(root\.AudioDuckI18n\.translate\(settings\.language, "menuSettings"\)/);
   assert.match(entry, /settingsPage\.open\(\)/);
   assert.doesNotMatch(entry, /GM_openInTab/);
-  const release = fs.readFileSync(path.join(root, "release-artifacts", "ChatGPT-Audio-Ducking.user.js"), "utf8");
-  assert.match(release.slice(0, release.indexOf("// ==/UserScript==")), /@version\s+2\.7\.5/);
+  const release = fs.readFileSync(path.join(root, "release-artifacts", "ChatDuck.user.js"), "utf8");
+  assert.match(release.slice(0, release.indexOf("// ==/UserScript==")), /@version\s+2\.7\.5-alpha\.1/);
   assert.doesNotMatch(release, /Authorization:\s*`Bearer\s*\$\{TOKEN\}|__AGENT_TOKEN__|[a-f0-9]{64}/i);
 });

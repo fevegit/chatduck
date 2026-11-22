@@ -6,12 +6,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$version = '2.7.5'
+$version = '2.7.5-alpha.1'
 $repository = ([Uri]$RepositoryUrl.TrimEnd('/')).AbsolutePath.Trim('/').Split('/')
 if ($repository.Length -ne 2) { throw 'Indica la URL exacta del repositorio GitHub.' }
 $owner, $name = $repository
 $raw = "https://raw.githubusercontent.com/$owner/$name/main/ChatGPT-Audio-Ducking.user.js"
-$installer = "https://github.com/$owner/$name/releases/download/v$version/Audio-Ducking-Windows-Agent-$version-x64.msi"
+$installer = "https://github.com/$owner/$name/releases/download/v$version/ChatDuck-Windows-Agent-$version-x64.msi"
 
 $header = @"
 // ==UserScript==
@@ -20,9 +20,10 @@ $header = @"
 // @name:es      Audio Ducking para ChatGPT
 // @namespace    https://local.chatgpt-audio-ducking/
 // @version      $version
-// @description  Pause or lower selected players while dictating in ChatGPT.
-// @description:en Pause or lower selected players while dictating in ChatGPT.
-// @description:es Pausa o atenúa los reproductores seleccionados mientras dictas en ChatGPT.
+// @author       ChatDuck contributors
+// @description  ChatDuck — audio ducking for ChatGPT voice input.
+// @description:en ChatDuck — audio ducking for ChatGPT voice input.
+// @description:es ChatDuck — atenuación de audio para la entrada de voz de ChatGPT.
 // @homepageURL  https://github.com/$owner/$name
 // @supportURL   https://github.com/$owner/$name/issues
 // @updateURL    $raw
@@ -73,5 +74,5 @@ $script = $script.Replace('// @CUSTOM_SITE_MATCHES@', '')
 $output = Join-Path $root 'ChatGPT-Audio-Ducking.user.js'
 [IO.File]::WriteAllText($output, $script, [Text.UTF8Encoding]::new($false))
 New-Item -ItemType Directory -Force -Path (Join-Path $root 'release-artifacts') | Out-Null
-Copy-Item -LiteralPath $output -Destination (Join-Path $root 'release-artifacts\ChatGPT-Audio-Ducking.user.js') -Force
+Copy-Item -LiteralPath $output -Destination (Join-Path $root 'release-artifacts\ChatDuck.user.js') -Force
 Write-Output "Built generic userscript v$version for $RepositoryUrl"

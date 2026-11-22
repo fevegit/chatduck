@@ -8,6 +8,7 @@
 **/backups/
 /release-artifacts/*
 !/release-artifacts/.gitkeep
+/ChatDuck.user.js
 /.tools/
 *.user
 *.suo

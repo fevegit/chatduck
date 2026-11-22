@@ -15,9 +15,9 @@ $installDir = Join-Path $env:LOCALAPPDATA 'Programs\ChatGPTAudioDuckingTM'
 $configPath = Join-Path $installDir 'agent.json'
 $startupKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $startupValue = 'ChatGPTAudioDuckingAgent'
-$menuDir = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Audio Ducking'
-$logInstall = Join-Path $runnerTemp 'audio-ducking-msi-install.log'
-$logUninstall = Join-Path $runnerTemp 'audio-ducking-msi-uninstall.log'
+$menuDir = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\ChatDuck'
+$logInstall = Join-Path $runnerTemp 'chatduck-msi-install.log'
+$logUninstall = Join-Path $runnerTemp 'chatduck-msi-uninstall.log'
 $agentPath = Join-Path $installDir 'ChatGPTAudioDuckingAgent.exe'
 $baseUri = [Uri]'http://127.0.0.1:48731/'
 $client = [Net.Http.HttpClient]::new([Net.Http.HttpClientHandler]@{ UseProxy = $false })
@@ -102,10 +102,10 @@ try {
     }
     if (-not (Test-Path -LiteralPath $menuDir -PathType Container)) { throw 'Per-user Start Menu shortcut folder was not installed.' }
     $uninstallEntries = Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -ErrorAction SilentlyContinue |
-        Where-Object { (Get-ItemProperty -LiteralPath $_.PSPath).DisplayName -eq 'Audio Ducking Windows Agent' }
+        Where-Object { (Get-ItemProperty -LiteralPath $_.PSPath).DisplayName -eq 'ChatDuck Windows Agent' }
     if (@($uninstallEntries).Count -ne 1) { throw 'Expected exactly one per-user uninstall registry entry.' }
     $machineEntries = Get-ChildItem 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -ErrorAction SilentlyContinue |
-        Where-Object { (Get-ItemProperty -LiteralPath $_.PSPath).DisplayName -eq 'Audio Ducking Windows Agent' }
+        Where-Object { (Get-ItemProperty -LiteralPath $_.PSPath).DisplayName -eq 'ChatDuck Windows Agent' }
     if (@($machineEntries).Count -ne 0) { throw 'The MSI unexpectedly registered a machine-wide install.' }
 
     Start-Agent
@@ -191,7 +191,7 @@ try {
         if ($remainingStartup) { throw 'Uninstaller left the agent-owned startup value behind.' }
     }
     $remainingEntries = Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -ErrorAction SilentlyContinue |
-        Where-Object { (Get-ItemProperty -LiteralPath $_.PSPath).DisplayName -eq 'Audio Ducking Windows Agent' }
+        Where-Object { (Get-ItemProperty -LiteralPath $_.PSPath).DisplayName -eq 'ChatDuck Windows Agent' }
     if (@($remainingEntries).Count -ne 0) { throw 'Uninstaller left its per-user uninstall entry behind.' }
     Write-Output 'PASS clean MSI uninstall, owned startup cleanup, and per-user registry cleanup.'
     'Passed: hosted Windows MSI install/uninstall and live local-agent protocol checks. Tampermonkey/browser integration is not exercised by this smoke test.' |

@@ -1,6 +1,11 @@
 # Changelog
 
-## 2.7.5 — public release candidate
+## 2.7.5-alpha.1 — ChatDuck public alpha candidate
+
+- Rebranded the product, settings panel, Windows Agent installer, Start menu shortcut, and documentation as ChatDuck.
+- Prepared generic userscript and Windows Agent release assets for `fevegit/chatduck`.
+- Preserved the existing Tampermonkey update identity, legacy script filename, MSI UpgradeCode, and installed agent paths/names for upgrade compatibility.
+- Added an explicit alpha notice and documented installation, compatibility, and verification limits.
 
 - Added local first-run pairing with a per-install random token; the token is not embedded in the userscript.
 - Signed local agent commands and responses with HMAC-SHA-256, timestamps, and replay-resistant nonces.
@@ -9,4 +14,4 @@
 - Added a per-user Windows installer build and privacy, permissions, security, installation, and uninstall documentation.
 - Kept the 2.7.4 audio-control engine and web integration behavior unchanged.
 
-This candidate still requires the clean Windows installer and live ChatGPT recording checks listed in `docs/release-readiness.md`.
+This alpha still requires the isolated Windows installation and live ChatGPT recording checks listed in `docs/release-readiness.md`.

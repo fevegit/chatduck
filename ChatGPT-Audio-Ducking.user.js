@@ -3,14 +3,15 @@
 // @name:en      ChatGPT Audio Ducking
 // @name:es      Audio Ducking para ChatGPT
 // @namespace    https://local.chatgpt-audio-ducking/
-// @version      2.7.5
-// @description  Pause or lower selected players while dictating in ChatGPT.
-// @description:en Pause or lower selected players while dictating in ChatGPT.
-// @description:es Pausa o atenúa los reproductores seleccionados mientras dictas en ChatGPT.
-// @homepageURL  https://github.com/fevegit/audio-ducking
-// @supportURL   https://github.com/fevegit/audio-ducking/issues
-// @updateURL    https://raw.githubusercontent.com/fevegit/audio-ducking/main/ChatGPT-Audio-Ducking.user.js
-// @downloadURL  https://raw.githubusercontent.com/fevegit/audio-ducking/main/ChatGPT-Audio-Ducking.user.js
+// @version      2.7.5-alpha.1
+// @author       ChatDuck contributors
+// @description  ChatDuck — audio ducking for ChatGPT voice input.
+// @description:en ChatDuck — audio ducking for ChatGPT voice input.
+// @description:es ChatDuck — atenuación de audio para la entrada de voz de ChatGPT.
+// @homepageURL  https://github.com/fevegit/chatduck
+// @supportURL   https://github.com/fevegit/chatduck/issues
+// @updateURL    https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js
+// @downloadURL  https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js
 // @match        https://chatgpt.com/*
 // @match        https://youtube.com/*
 // @match        https://www.youtube.com/*
@@ -40,7 +41,7 @@
   "use strict";
 
   const EN = Object.freeze({
-    brand: "Audio Ducking", settings: "Settings", menuSettings: "Open Audio Ducking settings", close: "Close", language: "Language", english: "English", spanish: "Spanish",
+    brand: "ChatDuck", settings: "Settings", menuSettings: "Open ChatDuck settings", close: "Close", language: "Language", english: "English", spanish: "Spanish",
     tagline: "Control playback while you dictate", general: "General", enabled: "Enabled", enabledHint: "Automatically control playback during dictation",
     modalSize: "Panel size", sizeAuto: "Auto", sizeCompact: "Compact", sizeNormal: "Normal", sizeLarge: "Large",
     activeLock: "Settings are locked while dictation is active.", whenDictating: "When dictation starts", pause: "Pause", duck: "Ducking",
@@ -49,7 +50,7 @@
     youtube: "YouTube", youtubeMusic: "YouTube Music", spotifyWeb: "Spotify Web", twitch: "Twitch", plexWeb: "Plex Web", behavior: "Behavior", mode: "Mode",
     inherit: "General", target: "Target", ownTarget: "Use custom target", dictationVolume: "Volume while dictating", useGlobalTarget: "Use global volume ({value}%)", useCustomTarget: "Custom", customTarget: "Custom volume", effectiveGlobalTarget: "Using global volume: {value}%", remove: "Remove", add: "Add", added: "Added", updateIdentity: "Update identity",
     plexServers: "Local Plex servers", addPlexOrigin: "+ Add server origin", emptyPlexOrigins: "Add the exact origin of your local server.",
-    plexPermission: "Requires exact host permission in Tampermonkey", plexHostHelp: "Audio Ducking only controls local HTML5 playback. For each server, add the shown line in Tampermonkey → Edit. Firefox may ignore ports in match rules; runtime control still checks the exact origin.",
+    plexPermission: "Requires exact host permission in Tampermonkey", plexHostHelp: "ChatDuck only controls local HTML5 playback. For each server, add the shown line in Tampermonkey → Edit. Firefox may ignore ports in match rules; runtime control still checks the exact origin.",
     otherSites: "Custom sites", otherSitesHint: "Only domains you add", addSite: "+ Add website", authorizeSites: "Authorize sites in Tampermonkey",
     customShortHelp: "Add a compatible website and allow its host access in Tampermonkey.", customPermissionHelp: "In Tampermonkey, open the userscript editor and add the exact match line shown for the site to its header. If you use the optional agent, the Authorize sites button can prepare these permissions for you.", permissionDetails: "Permission and setup details",
     emptySites: "No sites added yet.", windowsApps: "Windows apps", spotifyDesktop: "Spotify desktop", windowsMedia: "Windows Media Control · per-app volume",
@@ -72,7 +73,7 @@
   });
 
   const ES = Object.freeze({
-    brand: "Audio Ducking", settings: "Configuración", menuSettings: "Abrir configuración de Audio Ducking", close: "Cerrar", language: "Idioma", english: "Inglés", spanish: "Español",
+    brand: "ChatDuck", settings: "Configuración", menuSettings: "Abrir configuración de ChatDuck", close: "Cerrar", language: "Idioma", english: "Inglés", spanish: "Español",
     tagline: "Controla la reproducción mientras dictas", general: "General", enabled: "Activado", enabledHint: "Controla la reproducción automáticamente durante el dictado",
     modalSize: "Tamaño del panel", sizeAuto: "Automático", sizeCompact: "Compacto", sizeNormal: "Normal", sizeLarge: "Grande",
     activeLock: "La configuración está bloqueada mientras el dictado está activo.", whenDictating: "Al empezar a dictar", pause: "Pausar", duck: "Ducking",
@@ -81,7 +82,7 @@
     youtube: "YouTube", youtubeMusic: "YouTube Music", spotifyWeb: "Spotify Web", twitch: "Twitch", plexWeb: "Plex Web", behavior: "Comportamiento", mode: "Modo",
     inherit: "General", target: "Objetivo", ownTarget: "Usar objetivo propio", dictationVolume: "Volumen durante el dictado", useGlobalTarget: "Usar volumen global ({value} %)", useCustomTarget: "Personalizado", customTarget: "Volumen personalizado", effectiveGlobalTarget: "Volumen global aplicado: {value} %", remove: "Eliminar", add: "Añadir", added: "Añadida", updateIdentity: "Actualizar identidad",
     plexServers: "Servidores Plex locales", addPlexOrigin: "+ Añadir servidor", emptyPlexOrigins: "Añade el origen exacto de tu servidor local.",
-    plexPermission: "Requiere autorización del host en Tampermonkey", plexHostHelp: "Audio Ducking solo controla la reproducción HTML5 local. Para cada servidor, añade la línea indicada en Tampermonkey → Editar. Firefox puede ignorar el puerto en la regla; el control comprueba el origen exacto.",
+    plexPermission: "Requiere autorización del host en Tampermonkey", plexHostHelp: "ChatDuck solo controla la reproducción HTML5 local. Para cada servidor, añade la línea indicada en Tampermonkey → Editar. Firefox puede ignorar el puerto en la regla; el control comprueba el origen exacto.",
     otherSites: "Sitios personalizados", otherSitesHint: "Solo los dominios que añadas", addSite: "+ Añadir sitio web", authorizeSites: "Autorizar sitios en Tampermonkey",
     customShortHelp: "Añade un sitio compatible y autoriza su acceso de host en Tampermonkey.", customPermissionHelp: "En Tampermonkey, abre el editor del userscript y añade al encabezado la regla exacta que aparece para cada sitio. Si usas el agente opcional, el botón Autorizar sitios puede preparar esos permisos.", permissionDetails: "Detalles de permisos e instalación",
     emptySites: "Aún no hay sitios añadidos.", windowsApps: "Aplicaciones Windows", spotifyDesktop: "Spotify de escritorio", windowsMedia: "Control multimedia de Windows · volumen por aplicación",
@@ -1192,12 +1193,12 @@
           let value;
           try { value = JSON.parse(response.responseText || "{}"); } catch (_) { value = null; }
           if (response.status < 200 || response.status >= 300 || !/^[a-f0-9]{64}$/i.test(value?.token || "")) {
-            reject(new Error(value?.error || "No se pudo emparejar. Inicia otra vez Audio Ducking Agent para generar un código nuevo."));
+            reject(new Error(value?.error || "No se pudo emparejar. Inicia otra vez ChatDuck Agent para generar un código nuevo."));
             return;
           }
           try { GM_setValue(TOKEN_KEY, value.token); }
           catch (_) { reject(new Error("Tampermonkey no pudo guardar la credencial local")); return; }
-          setPairStatus(doc, "Audio Ducking is connected to this browser. You can close this tab.");
+          setPairStatus(doc, "ChatDuck is connected to this browser. You can close this tab.");
           resolve(true);
         },
         onerror() { reject(new Error("No se pudo conectar al agente local")); },
@@ -1213,7 +1214,7 @@
     completePairing,
     setPairStatus,
     get configured() { return /^[a-f0-9]{64}$/i.test(token()); },
-    installUrl: "https://github.com/fevegit/audio-ducking/releases/download/v2.7.5/Audio-Ducking-Windows-Agent-2.7.5-x64.msi"
+    installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.7.5-alpha.1/ChatDuck-Windows-Agent-2.7.5-alpha.1-x64.msi"
   };
   root.AudioDuckAgent = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
@@ -1323,7 +1324,7 @@
       let installUrl = "";
       try {
         const candidate = new URL(root.AudioDuckAgent?.installUrl || "");
-        if (candidate.protocol === "https:" && candidate.hostname === "github.com" && /\/releases\/download\/v\d+\.\d+\.\d+\/Audio-Ducking-Windows-Agent-\d+\.\d+\.\d+-x64\.msi$/.test(candidate.pathname)) installUrl = candidate.href;
+        if (candidate.protocol === "https:" && candidate.hostname === "github.com" && /\/releases\/download\/v[A-Za-z0-9.-]+\/ChatDuck-Windows-Agent-[A-Za-z0-9.-]+-x64\.msi$/.test(candidate.pathname)) installUrl = candidate.href;
       } catch (_) {}
       const showInstallAgent = wantsWindows && !root.AudioDuckAgent?.configured && Boolean(installUrl);
 
@@ -1381,7 +1382,7 @@
         @media(max-width:620px){.panel{--space-4:14px;--space-5:14px;width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100vh - 16px)}.topbar{padding:var(--space-3) var(--space-4)}main{padding:var(--space-3) var(--space-4) var(--space-4)}.windows-app-row{gap:8px}.windows-app-heading{gap:8px}.footer{align-items:center;padding:10px var(--space-3)}.footer-left{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;flex:1}.footer-field{align-content:start;gap:4px}.footer-field select{width:100%;min-width:0;max-width:100%}.support-link{min-width:0;white-space:normal}.autosave{display:block;white-space:normal}.policy-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.advanced-fields{grid-template-columns:1fr}}
         @media(max-width:390px){.panel{--space-4:12px;--space-5:12px}.footer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"language size close" "support autosave autosave";gap:var(--space-2);padding:var(--space-2)}.footer-left{display:contents}.footer-left>.footer-field:first-child{grid-area:language}.footer-left>.footer-field:nth-child(2){grid-area:size}.footer-left>.support-link{grid-area:support;white-space:nowrap}.footer-left>.autosave{grid-area:autosave}.footer>.primary{grid-area:close;align-self:center;justify-self:end}.policy-grid{grid-template-columns:1fr}}
       </style><div class="backdrop${entrance}" data-backdrop><section class="panel${entrance}" data-focus="panel" data-size="${settings.modalSize}" lang="${settings.language}" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-describedby="settings-tagline" tabindex="-1">
-        <header class="topbar"><div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M17 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg></span><div><h1 id="settings-title">${this.e("brand")} <span class="version">2.7.4</span></h1><p id="settings-tagline">${this.e("tagline")}</p></div></div><button class="quiet icon-button" data-close aria-label="${this.e("close")}" title="${this.e("close")}" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+        <header class="topbar"><div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M17 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg></span><div><h1 id="settings-title">${this.e("brand")} <span class="version">2.7.5-alpha.1</span></h1><p id="settings-tagline">${this.e("tagline")}</p></div></div><button class="quiet icon-button" data-close aria-label="${this.e("close")}" title="${this.e("close")}" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
         <main>${state.sessionActive ? `<p class="lock-note" role="status">${this.e("activeLock")}</p>` : ""}
           <section class="section"><h2 class="section-title">${this.e("general")}</h2>${row("enabled", "enabled", "enabledHint")}<p class="section-title">${this.e("whenDictating")}</p><div class="segments" role="group" aria-label="${this.e("whenDictating")}"><button class="segment" data-focus="mode:pause" data-mode="pause" aria-pressed="${settings.mode === "pause"}" ${disabled}>${this.e("pause")}</button><button class="segment" data-focus="mode:duck" data-mode="duck" aria-pressed="${settings.mode === "duck"}" ${disabled}>${this.e("duck")}</button></div>${settings.mode === "duck" ? `<label class="volume"><span class="volume-head"><span>${this.e("targetVolume")}</span><output for="target-volume">${settings.targetVolumePercent}%</output></span><input id="target-volume" data-focus="setting:targetVolumePercent" aria-label="${this.e("targetVolume")}" type="range" min="0" max="100" step="1" data-setting="targetVolumePercent" value="${settings.targetVolumePercent}" ${disabled}><span class="range-labels"><span>${this.e("minimum")}</span><span>${this.e("maximum")}</span></span></label>` : ""}</section>
           <section class="section"><h2 class="section-title">${this.e("webIntegrations")}</h2>${row("webIntegration", "webPlayers", "webPlayersHint")}<details data-section="web" open><summary>${this.e("supportedSites")}</summary><div class="details-body">${webRow("youtube", "youtube", settings.webPlatforms.youtube)}${webRow("youtubeMusic", "youtubeMusic", settings.webPlatforms.youtubeMusic)}${webRow("spotifyWeb", "spotifyWeb", settings.webPlatforms.spotifyWeb)}${webRow("twitch", "twitch", settings.webPlatforms.twitch)}${webRow("plexWeb", "plexWeb", settings.webPlatforms.plexWeb)}
@@ -1390,7 +1391,7 @@
           </div></details></section>
           <section class="section"><h2 class="section-title">${this.e("windowsApps")}</h2><div class="managed-row"><div class="player-row">${row("spotifyDesktop", "spotifyDesktop", "windowsMedia")}${this.policyControls("spotifyDesktop", settings, disabled)}</div></div><details data-section="apps" open><summary>${this.e("windowsApps")}</summary><div class="details-body"><p class="agent-status" role="status"><span class="status-dot" data-status-dot data-ok="${Boolean(state.agent?.ok)}" aria-hidden="true"></span><span data-agent-status>${agentStatus}</span></p>${windowsApps || `<p class="empty">${this.e("noOtherApps")}</p>`}<div class="section-actions"><button class="quiet" data-agent-control data-action="add-app" ${disabled} ${state.agent?.ok ? "" : "disabled"}>${this.e("addApp")}</button><button class="quiet" data-agent-control data-action="refresh-apps" ${state.agent?.ok ? "" : "disabled"}>${this.e("refreshApps")}</button></div>${showInstallAgent ? `<p class="agent-note">${this.e("agentInstallHint")}</p><div class="section-actions"><a class="quiet install-agent" href="${this.escape(installUrl)}" target="_blank" rel="noopener noreferrer">${this.e("installWindowsAgent")}</a></div>` : ""}${state.agent?.ok ? `<label class="row"><span class="row-copy"><strong>${this.e("agentStartup")}</strong><small>${this.e("agentStartupHint")}</small></span><input type="checkbox" role="switch" data-agent-control data-agent-autostart ${state.agent.autostartEnabled ? "checked" : ""} ${state.sessionActive ? "disabled" : ""}><span class="switch-ui" aria-hidden="true"></span></label>` : ""}</div></details></section>
           <details class="section advanced" data-section="advanced"><summary>${this.e("advanced")}</summary><div class="details-body">${row("voiceMode", "voiceMode", "voiceModeHint")}<label class="field">${this.e("excludedDomains")}<textarea data-focus="setting:excludedDomains" data-setting="excludedDomains" placeholder="${this.e("excludedPlaceholder")}" ${disabled}>${this.escape(settings.excludedDomains)}</textarea></label><h2 class="section-title">${this.e("transitions")}</h2><p class="subhint">${this.e("transitionHint")}</p><div class="advanced-fields"><label>${this.e("fadeOut")}<input data-focus="setting:fadeOutMs" type="range" min="0" max="1000" step="25" data-setting="fadeOutMs" value="${settings.fadeOutMs}" ${disabled}><output data-fade-label="fadeOutMs">${settings.fadeOutMs} ms</output></label><label>${this.e("fadeIn")}<input data-focus="setting:fadeInMs" type="range" min="0" max="1500" step="25" data-setting="fadeInMs" value="${settings.fadeInMs}" ${disabled}><output data-fade-label="fadeInMs">${settings.fadeInMs} ms</output></label></div></div></details>
-          <details class="section" data-section="about"><summary>${this.e("about")}</summary><div class="details-body"><p class="about-copy"><strong>Audio Ducking 2.7.5</strong> · ${this.e("aboutText")}</p><details data-section="technical-info"><summary>${this.e("technicalDetails")}</summary><p class="subhint">${this.e("agentOptional")}</p></details></div></details>
+          <details class="section" data-section="about"><summary>${this.e("about")}</summary><div class="details-body"><p class="about-copy"><strong>ChatDuck 2.7.5-alpha.1</strong> · ${this.e("aboutText")}</p><details data-section="technical-info"><summary>${this.e("technicalDetails")}</summary><p class="subhint">${this.e("agentOptional")}</p></details></div></details>
         </main><footer class="footer"><div class="footer-left"><label class="footer-field" for="settings-language">${this.e("language")}<select id="settings-language" data-focus="language" data-language aria-label="${this.e("language")}">${root.AudioDuckI18n.LANGUAGE_OPTIONS.map(({ code, labelKey }) => `<option value="${code}" ${settings.language === code ? "selected" : ""}>${this.e(labelKey)}</option>`).join("")}</select></label><label class="footer-field" for="settings-size">${this.e("modalSize")}<select id="settings-size" data-focus="modalSize" data-setting="modalSize" aria-label="${this.e("modalSize")}">${["auto", "compact", "normal", "large"].map((size) => `<option value="${size}" ${settings.modalSize === size ? "selected" : ""}>${this.e(`size${size[0].toUpperCase()}${size.slice(1)}`)}</option>`).join("")}</select></label><a class="support-link" href="https://ko-fi.com/fevee" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8.2-4.8-9.8-9.7C.8 7.5 3.1 4 7 4c2.1 0 3.8 1.1 5 2.8C13.2 5.1 14.9 4 17 4c3.9 0 6.2 3.5 4.8 7.3C20.2 16.2 12 21 12 21Z"/></svg>${this.e("support")}</a><span class="autosave">${this.e("savedAutomatically")}</span></div><button class="primary" data-close type="button">${this.e("close")}</button></footer>
         <dialog class="dialog" data-dialog="site" aria-labelledby="site-title"><h2 id="site-title">${this.e("dialogSiteTitle")}</h2><p>${this.e("dialogSiteDescription")}</p><form data-form="site"><label>${this.e("siteLabel")}<input name="site" placeholder="${this.e("sitePlaceholder")}" required autocomplete="url"></label><div class="dialog-status" aria-live="polite"></div><div class="dialog-actions"><button type="button" class="quiet" data-action="close-dialog">${this.e("cancel")}</button><button class="primary" type="submit">${this.e("fieldAdd")}</button></div></form></dialog>
         <dialog class="dialog" data-dialog="plex-origin" aria-labelledby="plex-title"><h2 id="plex-title">${this.e("dialogPlexTitle")}</h2><p>${this.e("dialogPlexDescription")}</p><form data-form="plex-origin"><label>${this.e("plexOriginLabel")}<input name="origin" placeholder="${this.e("plexOriginPlaceholder")}" required autocomplete="url"></label><div class="dialog-status" aria-live="polite"></div><div class="dialog-actions"><button type="button" class="quiet" data-action="close-dialog">${this.e("cancel")}</button><button class="primary" type="submit">${this.e("fieldAdd")}</button></div></form></dialog>

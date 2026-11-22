@@ -2,7 +2,7 @@
 
 ## Local agent boundary
 
-The optional agent listens on `127.0.0.1:48731`; it rejects non-loopback peers and unexpected `Host` values. The public userscript pairs only after the user launches **Audio Ducking Agent**. The agent opens a five-minute, random, single-use pairing code in the URL fragment. The code is never included in the HTTP request path or agent logs. The returned per-install token is stored in Tampermonkey storage and the current user's agent configuration.
+The optional agent listens on `127.0.0.1:48731`; it rejects non-loopback peers and unexpected `Host` values. The userscript pairs only after the user launches **ChatDuck Agent**. The agent opens a five-minute, random, single-use pairing code in the URL fragment. The code is never included in the HTTP request path or agent logs. The returned per-install token is stored in Tampermonkey storage and the current user's agent configuration.
 
 Regular browser-agent commands and responses after pairing are authenticated with HMAC-SHA-256. Requests include a timestamp and one-use nonce to reject stale or replayed commands. The agent does not serve a token-bearing userscript from an unauthenticated endpoint. Custom-site script downloads use short-lived, single-use tickets created by an authenticated request.
 

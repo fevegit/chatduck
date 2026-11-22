@@ -1,39 +1,35 @@
-# Release readiness — v2.7.5 candidate
+# Release readiness — ChatDuck v2.7.5-alpha.1
 
-This local candidate is not a published GitHub release. It is not signed with a code-signing certificate.
+This is an experimental alpha candidate. The repository remains private while the proposed MIT license awaits explicit approval. Do not describe the product as stable.
 
-## Verified from the inherited 2.7.4 baseline
+## Verified from the 2.7.4 baseline
 
-- The project owner reports manual use with ChatGPT dictation, Spotify Web and desktop, YouTube, Plex Web, and Plex for Windows in Ducking.
-- Existing Firefox UI screenshots are included as representative settings-panel captures.
-- The original project folder has no Git history; this staged repository starts with a clean local history.
+- The project owner manually tested the previous version with ChatGPT dictation, Spotify Web and desktop, YouTube, Plex Web, and Plex for Windows (Ducking).
+- The settings-panel capture was regenerated headlessly from the current ChatDuck modal preview fixture. It is not a capture from a live ChatGPT or Tampermonkey session.
+- Existing MSI identity was reviewed: the upgrade code, per-user app-data folder, executable name, registry startup value, and internal agent protocol identifiers remain unchanged. MSI ProductVersion is numeric `2.7.5`, newer than `2.7.4`; the display/release version is `2.7.5-alpha.1`.
+- Tampermonkey `@name`, localized names, `@namespace`, and legacy userscript filename are retained to preserve update identity. Product UI and new install assets use ChatDuck. The update URL points to the renamed `fevegit/chatduck` repository and legacy filename.
 
-## Checks completed on this local candidate
+## Candidate checks
 
-- A previous .NET 10 Release build produced a self-contained x64 MSI; database inspection confirmed per-user scope and the three expected payloads. The latest rebuild compiled the agent but stopped before MSI generation because this host lacks the WiX UI extension. The Windows workflow installs the pinned extension before building.
-- No MSI installation has been run on this computer. The existing local MSI is not evidence of the workflow's built artifact or a clean-install test.
-- `node --test tests/*.test.cjs`: 66 passed. The volume suite passed 21 checks; protocol helper checks passed for valid and invalid HMAC inputs.
-- The initial staged Git history contained 48 source/documentation files, no local binaries, and no developer token or personal profile path. Build outputs and release assets are ignored.
-- SHA-256 values were generated for both local release assets. They must be regenerated after replacing the placeholder repository URL.
+- The generic userscript, self-contained .NET 10 x64 agent, and MSI were rebuilt locally from this source. The previous MSI and previous-name assets were excluded from `release-artifacts`.
+- MSI database inspection confirmed `ProductName=ChatDuck Windows Agent`, `ProductVersion=2.7.5`, and the unchanged UpgradeCode `{75A2EB87-3A7D-4A1C-A128-6BD4A88DB93F}`.
+- JavaScript tests: 66 passed. Native volume tests: 21 passed. Native HMAC protocol checks passed.
+- SHA-256 manifest was generated and verified against exactly the ChatDuck userscript and the new alpha MSI. No WiX debug symbols or previous-name installers remain in the release directory.
+- The generic userscript header retains the legacy name/namespace and uses the new repository update URL; no per-install token is embedded.
+- Actual MSI install, upgrade, restart, and uninstall on an isolated Windows machine: pending.
+- Real Tampermonkey pairing, microphone recording, and browser/player checks on the alpha: pending.
+- Update from a real 2.7.4 installation: pending. Do not use the maintainer's daily installation for this test.
+- Clean Windows install and compatibility on other computers: not verified; this limitation must remain prominent in alpha notes.
+- MSI code signing: not configured.
 
-## Windows CI status
+## GitHub Actions
 
-- .github/workflows/windows-validation.yml is manual-dispatch only, uses one hosted Windows job, read-only repository permissions, pinned first-party actions, a 30-minute timeout, and uploads no artifacts.
-- The workflow has not been dispatched. GitHub's billing API is unavailable to the current CLI session, so the plan, remaining included compute, and any hard spending limit could not be verified. Do not dispatch until the account owner confirms the run fits within included usage or a no-overage budget.
-- The workflow is prepared to build and hash the release files, run JavaScript and native agent tests, and install, exercise, restart, and uninstall the actual MSI on the ephemeral runner. The local smoke script is guarded so it refuses to run outside a GitHub-hosted Windows runner.
-- The MSI smoke test exercises the installed agent over loopback, including a fresh token, unsigned and invalid-pair rejection, HMAC response verification, replay rejection, reconnect, and cleanup. It does not exercise a real Tampermonkey/browser pairing or microphone session.
+`.github/workflows/windows-validation.yml` is manual-dispatch only and was not run. Do not trigger it as part of this preparation.
 
-## Must be completed before publication
+## Before public release
 
-- The local userscript and MSI links target `https://github.com/fevegit/audio-ducking`. Keep this repository private until a separate release decision; no release assets have been uploaded. Rebuild and verify hashes after any final release change.
-- Dispatch the hosted Windows validation workflow after billing status is confirmed and address any runner-only failures.
-- Verify real one-time pairing and expiry, custom-site ticket expiry/use, and Tampermonkey/browser integration separately; a simulated HTTP client is not a substitute for those checks.
-- Test update from 2.7.4 with synthetic configuration only. No 2.7.4 installer or synthetic migration fixture is currently available in this staging distribution.
-- Test ChatGPT recording and playback with the public candidate installed, plus YouTube, Spotify Web/Desktop, Plex Web, and Plex for Windows. Do not infer these from unit tests.
-- Verify no new permission prompts, microphone permission changes, exceptions, or user data in the staged Git history and release assets.
-- Review and approve the proposed MIT license, then rename it to `LICENSE`.
-- Confirm the final release filenames and SHA-256 values after the Windows VM test.
-- Decide whether to sign the MSI. No paid signing certificate was purchased or used.
-- Set a maintainer contact or GitHub private vulnerability reporting route before enabling public contributions.
-
-No item above is claimed as complete by static or unit tests alone.
+- Approve the proposed MIT license explicitly, then rename `LICENSE.proposed-MIT.txt` to `LICENSE`.
+- Complete isolated Windows install/upgrade/restart/uninstall validation and real ChatGPT recording checks.
+- Complete Tampermonkey pairing/update and supported player regression checks.
+- Rebuild the public userscript and MSI from the final commit, inspect both, and verify the attached SHA-256 manifest.
+- Review issue/security reporting routes and release notes. Keep the repository private until the license is approved.

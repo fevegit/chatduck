@@ -110,12 +110,12 @@
           let value;
           try { value = JSON.parse(response.responseText || "{}"); } catch (_) { value = null; }
           if (response.status < 200 || response.status >= 300 || !/^[a-f0-9]{64}$/i.test(value?.token || "")) {
-            reject(new Error(value?.error || "No se pudo emparejar. Inicia otra vez Audio Ducking Agent para generar un código nuevo."));
+            reject(new Error(value?.error || "No se pudo emparejar. Inicia otra vez ChatDuck Agent para generar un código nuevo."));
             return;
           }
           try { GM_setValue(TOKEN_KEY, value.token); }
           catch (_) { reject(new Error("Tampermonkey no pudo guardar la credencial local")); return; }
-          setPairStatus(doc, "Audio Ducking is connected to this browser. You can close this tab.");
+          setPairStatus(doc, "ChatDuck is connected to this browser. You can close this tab.");
           resolve(true);
         },
         onerror() { reject(new Error("No se pudo conectar al agente local")); },
