@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="Audio Ducking Windows Agent"
+           Manufacturer="Audio Ducking contributors"
+           Version="$(var.Version)"
+           UpgradeCode="{75A2EB87-3A7D-4A1C-A128-6BD4A88DB93F}"
+           Scope="perUser"
+           InstallerVersion="500"
+           Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Audio Ducking Windows Agent is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.ProjectDir)\docs\INSTALLER-NOTICE.rtf" />
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+
+    <Feature Id="AgentFeature" Title="Audio Ducking Windows Agent" Level="1">
+      <ComponentGroupRef Id="AgentFiles" />
+      <ComponentRef Id="StartMenuShortcuts" />
+    </Feature>
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="ChatGPTAudioDuckingTM" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AgentMenuFolder" Name="Audio Ducking" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="AgentFiles" Directory="INSTALLFOLDER">
+      <Component Id="AgentExecutable" Guid="*">
+        <File Id="AgentExeFile" Source="$(var.PublishDir)\ChatGPTAudioDuckingAgent.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="AgentSettingsPage" Guid="*">
+        <File Id="AgentSettingsFile" Source="$(var.ProjectDir)\settings.html" KeyPath="yes" />
+      </Component>
+      <Component Id="UserscriptTemplate" Guid="*">
+        <File Id="UserscriptTemplateFile" Source="$(var.ProjectDir)\ChatGPT-Audio-Ducking.user.js" Name="ChatGPT-Audio-Ducking.template.user.js" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Component Id="StartMenuShortcuts" Directory="AgentMenuFolder" Guid="*">
+      <Shortcut Id="PairBrowserShortcut" Name="Audio Ducking Agent" Description="Start Audio Ducking and pair this browser" Target="[INSTALLFOLDER]ChatGPTAudioDuckingAgent.exe" Arguments="--pair" WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="RemoveAgentMenuFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\AudioDucking\Agent" Name="StartMenuShortcut" Type="string" Value="1" KeyPath="yes" />
+    </Component>
+
+    <CustomAction Id="CleanAgentData" FileRef="AgentExeFile" ExeCommand="--uninstall" Execute="deferred" Impersonate="yes" Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="CleanAgentData" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+  </Package>
+</Wix>
