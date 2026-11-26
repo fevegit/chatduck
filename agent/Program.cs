@@ -505,7 +505,7 @@ internal sealed class LocalControlServer : IDisposable
         var beginStartedAt = Stopwatch.GetTimestamp();
         var sessionId = ReadSessionId(root);
         var settings = root.TryGetProperty("settings", out var value) ? AgentSettings.From(value) : new AgentSettings();
-        _log($"command begin session={sessionId} requestProcessingMs={Stopwatch.GetElapsedTime(requestReceivedAt, beginStartedAt).TotalMilliseconds:F1} mute={settings.DiscordMuteDuringDictation} deafen={settings.DiscordDeafenDuringDictation}");
+        _log($"command begin session={sessionId} requestProcessingMs={Stopwatch.GetElapsedTime(requestReceivedAt, beginStartedAt).TotalMilliseconds:F1}");
         var result = await _media.BeginAsync(sessionId, settings, requestReceivedAt);
         var ok = result.GetType().GetProperty("Ok")?.GetValue(result);
         _log($"command begin completed session={sessionId} ok={ok?.ToString() ?? "unknown"} bridgeElapsedMs={Stopwatch.GetElapsedTime(beginStartedAt).TotalMilliseconds:F1} requestElapsedMs={Stopwatch.GetElapsedTime(requestReceivedAt).TotalMilliseconds:F1}");
@@ -535,7 +535,6 @@ internal sealed class LocalControlServer : IDisposable
         status["agentFileVersion"] = typeof(Program).Assembly.GetCustomAttribute<System.Reflection.AssemblyFileVersionAttribute>()?.Version ?? "unknown";
         using (var identity = System.Security.Principal.WindowsIdentity.GetCurrent())
             status["agentIsElevated"] = new System.Security.Principal.WindowsPrincipal(identity).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-        status["capabilities"] = new[] { "discordMute", "discordDeafen" };
         return status;
     }
 
@@ -808,8 +807,6 @@ internal sealed class AgentSettings
     public bool FallbackDucking { get; set; } = true;
     public bool FallbackToPause { get; set; } = true;
     public bool SpotifyDesktop { get; set; } = true;
-    public bool DiscordMuteDuringDictation { get; set; }
-    public bool DiscordDeafenDuringDictation { get; set; }
     public List<WindowsAppSelection> WindowsApps { get; set; } = [];
     public Dictionary<string, PlayerRule> PlayerRules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -826,8 +823,6 @@ internal sealed class AgentSettings
             FallbackDucking = FallbackDucking,
             FallbackToPause = FallbackToPause,
             SpotifyDesktop = SpotifyDesktop,
-            DiscordMuteDuringDictation = DiscordMuteDuringDictation,
-            DiscordDeafenDuringDictation = DiscordDeafenDuringDictation,
             WindowsApps = WindowsApps,
             PlayerRules = PlayerRules
         };

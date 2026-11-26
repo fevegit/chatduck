@@ -33,6 +33,8 @@ test("authoritative installer is per-user, transactional, and verifies the activ
   assert.match(build, /--self-contained false/);
   assert.match(build, /PublishSingleFile=true/);
   assert.match(build, /-arch x64/);
+  assert.match(build, /SHA256SUMS\.txt/);
+  assert.match(build, /validation-report\.md/);
   assert.doesNotMatch(build, /setup\.exe|bootstrapper|asyncNoWait/i);
 
   assert.match(program, /Path\.Combine\(Environment\.GetFolderPath\(Environment\.SpecialFolder\.LocalApplicationData\), "ChatDuck"\)/);
@@ -54,7 +56,9 @@ test("authoritative installer is per-user, transactional, and verifies the activ
   assert.match(program, /StopOwnedAgentForRollbackAsync/);
   assert.match(protocol, /RequestStatusAsync/);
   assert.match(protocol, /X-Audio-Ducking-Response-Signature/);
-  assert.match(project, /<Version>2\.8\.8-rc\.1<\/Version>/);
+  assert.match(project, /<Version>2\.8\.9<\/Version>/);
+  assert.doesNotMatch(program, /DiscordMuteDuringDictation|DiscordDeafenDuringDictation|discordMute|discordDeafen/i);
+  assert.equal(fs.existsSync(path.join(root, "agent", "DiscordVoiceAutomation.cs")), false);
   assert.match(report, /ICE38/);
   assert.match(report, /ICE91/);
   assert.match(report, /real MSI rollback path has not been rerun/);
@@ -74,13 +78,13 @@ test("MSI binary verification executes the extracted compiled executable with a 
 
 test("consolidated package contains one MSI and userscript when built", (t) => {
   const out = path.join(__dirname, "..", "out");
-  const msi = path.join(out, "ChatDuck-Windows-Agent-2.8.8-rc.1-x64.msi");
+  const msi = path.join(out, "ChatDuck-Windows-Agent-2.8.9-x64.msi");
   const script = path.join(out, "ChatGPT-Audio-Ducking.user.js");
   if (!fs.existsSync(msi) || !fs.existsSync(script)) return t.skip("Package build not run in this checkout.");
   const artifacts = fs.readdirSync(out).filter((name) => /\.msi$|\.user\.js$/.test(name));
-  assert.deepEqual(artifacts.sort(), ["ChatDuck-Windows-Agent-2.8.8-rc.1-x64.msi", "ChatGPT-Audio-Ducking.user.js"].sort());
+  assert.deepEqual(artifacts.sort(), ["ChatDuck-Windows-Agent-2.8.9-x64.msi", "ChatGPT-Audio-Ducking.user.js"].sort());
   const header = fs.readFileSync(script, "utf8").slice(0, 500);
-  assert.match(header, /@version\s+2\.8\.8-rc\.1/);
+  assert.match(header, /@version\s+2\.8\.9/);
   const database = fs.readFileSync(msi);
   assert.ok(database.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])));
   assert.ok(database.length > 1024 * 1024);

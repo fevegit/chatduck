@@ -22,7 +22,6 @@ internal sealed class MediaCoordinator
     private readonly object _pendingFileSync = new();
     private readonly string _statePath;
     private readonly Action<string> _log;
-    private readonly DiscordVoiceController _discord;
     private readonly List<string> _errors = [];
     private ActiveControlSession? _active;
     private long _lastHeartbeatUtcTicks;
@@ -33,7 +32,6 @@ internal sealed class MediaCoordinator
     {
         _statePath = Path.Combine(appDirectory, "pending.json");
         _log = log;
-        _discord = new DiscordVoiceController(new WindowsDiscordVoiceAccess(log), Path.Combine(appDirectory, "discord-pending.json"), log);
         _ = MonitorAsync();
     }
 
@@ -62,52 +60,18 @@ internal sealed class MediaCoordinator
             _active = active;
             Interlocked.Exchange(ref _lastHeartbeatUtcTicks, DateTime.UtcNow.Ticks);
 
-            Task<DiscordBeginResult>? discordTask = null;
-            if (settings.DiscordMuteDuringDictation || settings.DiscordDeafenDuringDictation)
-            {
-                _log($"Discord begin dispatch session={sessionId} before=media-ducking");
-                var dispatchAt = Stopwatch.GetTimestamp();
-                active.DiscordDispatchAt = dispatchAt;
-                discordTask = Task.Run(async () =>
-                {
-                    using var process = Process.GetCurrentProcess();
-                    process.Refresh();
-                    var cpuBefore = process.TotalProcessorTime;
-                    var result = await _discord.BeginAsync(sessionId, settings.DiscordMuteDuringDictation, settings.DiscordDeafenDuringDictation);
-                    var completedAt = Stopwatch.GetTimestamp();
-                    process.Refresh();
-                    active.DiscordBeginCompletedAt = completedAt;
-                    active.DiscordBeginTaskMs = Stopwatch.GetElapsedTime(dispatchAt, completedAt).TotalMilliseconds;
-                    _log($"Discord begin task session={sessionId} outcome={result.Message} dispatchFromRequestMs={Stopwatch.GetElapsedTime(active.RequestReceivedAt, dispatchAt).TotalMilliseconds:F1} elapsedMs={active.DiscordBeginTaskMs:F1}");
-                    _log($"Discord agent resource sample session={sessionId} cpuDeltaMs={(process.TotalProcessorTime - cpuBefore).TotalMilliseconds:F1} workingSetBytes={process.WorkingSet64} threads={process.Threads.Count}; process-wide during activation, not idle baseline");
-                    return result;
-                });
-            }
             var pausedAppKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            try
-            {
-                var duckTask = DuckFallbackSessions(active, pausedAppKeys);
-                await FadeSelectedVolumeSessionsAsync(active);
-                var notReadyForPause = await HoldSilenceBeforePauseAsync(active);
-                await PauseMediaSessionsAsync(active, pausedAppKeys, notReadyVolumeApps: notReadyForPause);
-                await CompletePauseFallbacksAsync(active, pausedAppKeys);
-                var failedDuckingApps = await duckTask;
-                if (settings.FallbackToPause && failedDuckingApps.Count > 0)
-                    await PauseMediaSessionsAsync(active, pausedAppKeys, failedDuckingApps, fallbackUsed: true);
-                if (discordTask is not null)
-                {
-                    var discord = await discordTask;
-                    if (!discord.Ok) RecordError($"Control de Discord: {discord.Message}");
-                }
-                active.UnsupportedCount = failedDuckingApps.Count(failed => !active.Media.Any(item => item.FallbackUsed && MediaIdentityKeys(item.AppId, settings).Contains(failed)));
-                SavePendingLocked();
-                return StatusLocked(Stopwatch.GetElapsedTime(started).TotalMilliseconds, sessionId, BuildBeginTiming(active));
-            }
-            catch
-            {
-                if (discordTask is not null) try { await discordTask; } catch { }
-                throw;
-            }
+            var duckTask = DuckFallbackSessions(active, pausedAppKeys);
+            await FadeSelectedVolumeSessionsAsync(active);
+            var notReadyForPause = await HoldSilenceBeforePauseAsync(active);
+            await PauseMediaSessionsAsync(active, pausedAppKeys, notReadyVolumeApps: notReadyForPause);
+            await CompletePauseFallbacksAsync(active, pausedAppKeys);
+            var failedDuckingApps = await duckTask;
+            if (settings.FallbackToPause && failedDuckingApps.Count > 0)
+                await PauseMediaSessionsAsync(active, pausedAppKeys, failedDuckingApps, fallbackUsed: true);
+            active.UnsupportedCount = failedDuckingApps.Count(failed => !active.Media.Any(item => item.FallbackUsed && MediaIdentityKeys(item.AppId, settings).Contains(failed)));
+            SavePendingLocked();
+            return StatusLocked(Stopwatch.GetElapsedTime(started).TotalMilliseconds, sessionId, BuildBeginTiming(active));
         }
         finally { _gate.Release(); }
     }
@@ -277,7 +241,7 @@ internal sealed class MediaCoordinator
     public async Task RestorePendingAtStartupAsync()
     {
         await _gate.WaitAsync();
-        try { await RestorePendingLocked(null); await _discord.RestorePendingAtStartupAsync(); }
+        try { await RestorePendingLocked(null); }
         finally { _gate.Release(); }
     }
 
@@ -339,9 +303,6 @@ internal sealed class MediaCoordinator
             firstVolumeAfter = active.FirstVolumeAfter,
             fadeOutDurationMs = active.FadeOutDurationMs,
             fadeOutCompleteFromRequestMs = SinceRequest(active.FadeOutCompletedAt),
-            discordDispatchFromRequestMs = SinceRequest(active.DiscordDispatchAt),
-            discordCompleteFromRequestMs = SinceRequest(active.DiscordBeginCompletedAt),
-            discordTaskMs = active.DiscordBeginTaskMs,
             fadeOutTargetVolume = active.FadeOutTargetVolume,
             fadeOutWriteCount = active.FadeOutWriteCount,
             maxFadeOutStep = active.MaxFadeOutStep
@@ -735,7 +696,6 @@ internal sealed class MediaCoordinator
     {
         var active = _active;
         if (active is null) return 0;
-        await _discord.RestoreActiveAsync();
         var mediaJobs = active.Media.Select(async item =>
         {
             try
@@ -1025,10 +985,8 @@ internal sealed class MediaCoordinator
         while (true)
         {
             await Task.Delay(500);
-            await _discord.ObserveAsync();
             if (_active is null)
             {
-                await _discord.RestoreActiveAsync();
                 continue;
             }
             if (!await _gate.WaitAsync(0)) continue;
@@ -1174,9 +1132,6 @@ internal sealed class MediaCoordinator
         public float? FirstVolumeAfter { get; set; }
         public float FadeOutTargetVolume { get; set; }
         public double FadeOutDurationMs { get; set; }
-        public double? DiscordBeginTaskMs { get; set; }
-        public long? DiscordDispatchAt { get; set; }
-        public long? DiscordBeginCompletedAt { get; set; }
         public long? FadeOutCompletedAt { get; set; }
         public int FadeOutWriteCount { get; set; }
         public double MaxFadeOutStep { get; set; }

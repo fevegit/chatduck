@@ -12,11 +12,11 @@
     <AssemblyTitle>ChatDuck Windows Agent</AssemblyTitle>
     <Product>ChatDuck</Product>
     <Company>ChatDuck contributors</Company>
-    <Version>2.8.8-rc.1</Version>
+    <Version>2.8.9</Version>
     <InformationalVersion>$(Version)</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
-    <AssemblyVersion>2.8.8.0</AssemblyVersion>
-    <FileVersion>2.8.8.0</FileVersion>
+    <AssemblyVersion>2.8.9.0</AssemblyVersion>
+    <FileVersion>2.8.9.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyMetadata Include="SourceRevisionId" Value="$(SourceRevisionId)" Condition="'$(SourceRevisionId)' != ''" />

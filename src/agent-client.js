@@ -91,18 +91,6 @@
     } catch (_) { return false; }
   }
 
-  function discordPreferences(settings, status, startEvent = {}) {
-    const capabilities = Array.isArray(status?.capabilities) ? status.capabilities : [];
-    const activationAllowed = settings?.discordActivationMode !== "ctrl-click" || startEvent?.discordCtrlClick === true;
-    const mute = activationAllowed && settings?.discordMuteDuringDictation === true;
-    const deafen = activationAllowed && settings?.discordDeafenDuringDictation === true;
-    return {
-      discordMuteDuringDictation: mute && capabilities.includes("discordMute"),
-      discordDeafenDuringDictation: deafen && capabilities.includes("discordDeafen"),
-      unsupported: activationAllowed && ((settings?.discordMuteDuringDictation === true && !capabilities.includes("discordMute")) || (settings?.discordDeafenDuringDictation === true && !capabilities.includes("discordDeafen")))
-    };
-  }
-
   function setPairStatus(doc, message) {
     const update = () => { const status = doc?.querySelector?.("[data-pair-status]"); if (status) status.textContent = message; };
     if (doc?.readyState === "loading") doc.addEventListener("DOMContentLoaded", update, { once: true });
@@ -139,7 +127,6 @@
 
   const api = {
     request,
-    discordPreferences,
     isPairPage,
     completePairing,
     setPairStatus,

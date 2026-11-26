@@ -3,7 +3,7 @@
 // @name:en      ChatGPT Audio Ducking
 // @name:es      Audio Ducking para ChatGPT
 // @namespace    https://local.chatgpt-audio-ducking/
-// @version      2.8.8-rc.1
+// @version      2.8.9
 // @author       ChatDuck contributors
 // @description  ChatDuck — audio ducking for ChatGPT voice input.
 // @description:en ChatDuck — audio ducking for ChatGPT voice input.
@@ -31,11 +31,10 @@
 // @sandbox      DOM
 // @run-at       document-start
 // ==/UserScript==
-globalThis.AudioDuckNativeTheme = "\n:host{color-scheme:dark;--bg:#202020;--surface:#292929;--line:#3c3c3c;--fg:#ededed;--muted:#aaa;--accent:#9bc7ee;--field:#353535;--hover:#414141;--page:#141414;font:14px/1.5 'Segoe UI',Arial,sans-serif}*{box-sizing:border-box}.backdrop{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:24px;color:var(--fg)}button,input,select{font:inherit;color:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}button:disabled,input:disabled{opacity:.45;cursor:default}button{background:var(--field);border:1px solid #535353;border-radius:4px;min-height:31px;padding:4px 12px}button:hover:not(:disabled){background:var(--hover)}.window{width:min(680px,100%);background:var(--bg);border:1px solid #505050;border-radius:8px;box-shadow:0 16px 50px #0006;overflow:hidden}.titlebar{height:44px;display:flex;align-items:center;padding-left:20px;gap:9px;background:#292929;border-bottom:1px solid #353535}.titlebar strong{font-size:15px;font-weight:600;letter-spacing:.05px}.titlebar .sep{color:#777}.titlebar span{font-size:12px;color:#bbb}.titlebar .close{margin-left:auto;border:0;background:transparent;border-radius:0;height:43px;width:45px;font-size:21px;font-weight:300;color:#bbb}.titlebar .close:hover{background:#ad2525;color:white}.tabs{display:flex;padding:0 18px;gap:19px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}.tabs button{border:0;border-radius:0;background:transparent;padding:13px 1px 11px;color:var(--muted);white-space:nowrap;min-height:44px;position:relative;font-size:13px}.tabs button[aria-selected=true]{color:var(--fg);font-weight:600}.tabs button[aria-selected=true]:after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent)}.tabs button:hover{color:var(--fg);background:transparent}.pane{padding:24px 24px 18px;min-height:300px}.pane[hidden]{display:none}.section{font-size:12px;font-weight:600;color:var(--muted);margin:0 0 7px}.row{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:53px;padding:10px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}.label{font-weight:500}.hint{font-size:12px;color:var(--muted);margin-top:3px;max-width:390px}.right{display:flex;gap:10px;align-items:center;flex-shrink:0}.switch{display:flex;align-items:center;gap:9px;cursor:pointer}.switch input{appearance:none;width:36px;height:19px;border:1px solid #707070;border-radius:12px;position:relative;background:#292929;margin:0;cursor:pointer}.switch input:before{content:'';position:absolute;top:3px;left:3px;width:11px;height:11px;background:#aaa;border-radius:50%}.switch input:checked{background:var(--accent);border-color:var(--accent)}.switch input:checked:before{left:20px;background:#243c51}.switch span{font-size:12px;color:var(--muted);min-width:23px}.choice{display:flex;gap:18px;align-items:center}.choice label{display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}.choice input, .check input{accent-color:var(--accent);width:14px;height:14px;margin:0}.range{display:flex;align-items:center;gap:10px;min-width:225px}.range input[type=range]{appearance:none;width:160px;height:4px;background:#555;border-radius:2px;cursor:pointer}.range input[type=range]::-webkit-slider-thumb{appearance:none;background:var(--accent);border:2px solid var(--bg);border-radius:50%;width:16px;height:16px}.range input[type=range]::-moz-range-thumb{background:var(--accent);border:2px solid var(--bg);border-radius:50%;width:13px;height:13px}.num{width:54px;text-align:right;padding:4px 6px;background:var(--surface);border:1px solid #555;border-radius:3px;font-variant-numeric:tabular-nums}.numwrap{display:flex;align-items:center;gap:3px;color:var(--muted);font-size:12px}.group{margin-top:20px}.check{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;padding:7px 0}.foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 24px;border-top:1px solid var(--line);background:#242424;color:var(--muted);font-size:12px}.foot select{border:0;background:transparent;color:var(--muted);padding:3px 0}.foot .done{min-width:76px}.subtle{font-size:12px;color:var(--muted);margin:8px 0 0}.table{width:100%;border-collapse:collapse;font-size:13px}.table th{text-align:left;color:var(--muted);font-weight:400;font-size:12px;padding:7px 8px;border-bottom:1px solid var(--line)}.table td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}.table th:first-child,.table td:first-child{padding-left:0}.table td:last-child{text-align:right;padding-right:0}.table button{min-height:25px;padding:1px 8px;font-size:12px}.empty{color:var(--muted);font-size:13px;padding:12px 0}.entry{display:flex;gap:8px;margin-top:10px}.entry input{flex:1;min-width:0;background:var(--surface);border:1px solid #555;border-radius:4px;padding:6px 9px}.entry button{white-space:nowrap}select{background:var(--field);border:1px solid #535353;border-radius:4px;padding:5px 9px}.link{color:var(--accent);text-decoration:none}.link:hover{text-decoration:underline}.notice{padding:9px 0;color:var(--muted);font-size:12px}.titlebar small{font-size:11px;color:var(--muted);margin-left:auto}.titlebar small+.close{margin-left:0}#reopen{display:none}.closed #reopen{display:block}.closed .window{display:none}.footnote{font-size:12px;color:var(--muted)}@media(max-width:560px){.backdrop{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:24px;color:var(--fg)}.tabs{gap:14px;padding:0 14px}.pane{padding:18px 16px}.row{flex-wrap:wrap;gap:8px}.range{min-width:0}.range input[type=range]{width:125px}.foot{padding:10px 16px}.titlebar{padding-left:16px}.table{font-size:12px}.right{flex-shrink:1}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}\n.backdrop{pointer-events:auto}.window{max-height:min(820px,calc(100vh - 24px));display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden}.pane{overflow:auto;overscroll-behavior:contain}.foot{flex:none}.tabs [aria-selected=true]{color:var(--fg)}.diagnostic-frame{padding:12px 0;border-bottom:1px solid var(--line)}.diagnostic-player{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 12px;padding:9px 0;color:var(--muted);font-size:12px}.diagnostic-error{color:#f1a9a9}.row .hint{max-width:390px}.field{display:grid;gap:6px;margin-top:10px;font-size:12px;color:var(--muted)}.field textarea{min-height:76px;width:100%;background:var(--surface);border:1px solid #555;border-radius:4px;padding:7px 9px;color:var(--fg);font:inherit}.group details{margin-top:7px}.group .table input{max-width:72px}@media(max-width:560px){.backdrop{padding:12px}.window{max-height:calc(100vh - 24px)}.diagnostic-player{grid-template-columns:repeat(2,minmax(0,1fr))}}.managed-row{padding:9px 0;border-bottom:1px solid var(--line)}.windows-app-row{display:block}.windows-app-heading{display:flex;align-items:center;justify-content:space-between;gap:14px}.app-copy{display:grid;gap:3px;min-width:0}.app-copy strong{font-size:13px;font-weight:500}.app-path{overflow-wrap:anywhere;color:var(--muted);font-size:12px}.app-controls{display:flex;align-items:center;gap:8px}.app-switch input{accent-color:var(--accent);width:16px;height:16px}.remove-button{min-height:26px;padding:1px 8px}.player-policy{margin-left:14px;border-top:0;padding:4px 0 6px}.player-policy summary{color:var(--muted);font-size:12px}.policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:8px 0;color:var(--muted);font-size:12px}.policy-grid label{display:grid;gap:4px}.policy-grid select,.policy-grid input{max-width:140px}.app-card{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}.app-card strong{font-size:13px;font-weight:500}.app-card small{display:block;color:var(--muted);overflow-wrap:anywhere}.agent-status{color:var(--muted)}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#8f8f8f}.status-dot[data-ok=true]{background:#8bc49e}.agent-note{padding-top:12px;color:var(--muted);font-size:12px}.section-actions{display:flex;gap:8px;flex-wrap:wrap}.subhint{color:var(--muted);font-size:12px}.notice[role=status]:empty{display:none}@media(max-width:560px){.windows-app-heading{align-items:flex-start}.policy-grid{grid-template-columns:1fr}.app-card{align-items:flex-start}}\n/* Fixed native window; only its pane content changes between sections. */\n.window{width:min(720px,calc(100vw - 24px));height:min(480px,calc(100dvh - 24px));min-height:min(420px,calc(100dvh - 24px));display:grid;grid-template-rows:48px auto minmax(0,1fr) auto;overflow:hidden}\n.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;padding:0 12px;overflow:visible}\n.tabs button{min-width:0;padding:10px 3px;white-space:nowrap;text-align:center;font-size:13px}\n.pane{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:18px 22px}\n.native-page[hidden]{display:none}\n.row{min-height:48px;padding:8px 0}\n.check{min-height:36px;gap:10px}\n.check input[type=checkbox],.choice input[type=radio]{appearance:auto;width:17px;height:17px;margin:0;accent-color:var(--accent);flex:none}\n.switch input:focus-visible{outline:2px solid var(--fg);outline-offset:3px}\n.switch input:disabled{opacity:.45}\n.choice label{min-height:36px;padding:4px 2px}\n.target-control{display:flex;align-items:center;gap:12px;min-width:min(280px,50%)}\n.target-control input{flex:1;min-width:90px}\n.native-footer{min-height:54px;display:flex;align-items:center;gap:16px;padding:8px 18px}\n.native-footer .support-link{margin-right:auto}\n.support-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:12px;white-space:nowrap}\n.support-link svg{width:14px;height:14px;color:#d38b87}\n.support-link:hover{color:var(--fg)}\n.native-footer .language-label{display:inline-flex;align-items:center;gap:7px;min-height:30px;line-height:normal;white-space:nowrap}\n.native-footer .language-label .language-text{display:inline-flex;align-items:center;min-height:30px;line-height:normal}\n.native-footer .language-label select{display:block;box-sizing:border-box;min-width:82px;height:30px;min-height:30px;margin:0;padding:0 21px 0 2px;line-height:30px;vertical-align:middle;appearance:none;background-color:transparent;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='m3 4.5 3 3 3-3' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 3px center;background-size:12px 12px}\n.native-footer .saved-status{min-width:0;color:var(--muted)}\n.native-page h2.section{font-size:13px;margin:0 0 8px}\n.native-page .group{margin-top:18px}\n.native-page .details-body{padding:8px 0}\n.path-details{font-size:12px;color:var(--muted);margin-top:3px}\n.path-details summary{cursor:pointer;min-height:24px;display:inline-flex;align-items:center}\n.path-details code{display:block;overflow-wrap:anywhere;padding:4px 0}\n.agent-status-row{display:flex;align-items:center;gap:8px;min-height:30px;color:var(--muted)}\n.agent-status-row[data-connected=true]{color:var(--fg)}\n.quick-links{display:flex;gap:8px;margin-top:16px}\n.quick-links button{min-height:36px}\n.diagnostic-row{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:6px 14px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}\n.diagnostic-players{grid-column:1/-1}\n@media(max-width:620px){.tabs{grid-template-columns:repeat(3,minmax(0,1fr));padding:0 8px}.tabs button{min-height:36px;padding:6px 2px}.window{height:min(520px,calc(100dvh - 20px));min-height:min(400px,calc(100dvh - 20px))}.native-footer{gap:8px;padding:8px 10px;flex-wrap:wrap}.native-footer .support-link{margin-right:auto}.native-footer .done{margin-left:auto}}\n@media(max-width:390px){.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.native-footer .language-label{flex:1}.native-footer .saved-status{display:none}.pane{padding:14px 12px}.diagnostic-row{grid-template-columns:1fr auto}}\n.table{table-layout:fixed}.table td{overflow-wrap:anywhere}.agent-status-row{font-size:13px}.switch:has(input:disabled){opacity:.55;cursor:not-allowed}\n\n.switch.app-switch input{width:36px;height:19px}.switch.app-switch span{min-width:23px}\n.remove-button{display:inline-grid;width:36px;height:36px;min-width:36px;min-height:36px;place-items:center;flex:none;padding:0;color:var(--fg);line-height:1}\n.remove-button svg{display:block;width:17px;height:17px;overflow:visible;stroke:currentColor}\n";
-globalThis.AudioDuckVersion = '2.8.8-rc.1';
+globalThis.AudioDuckNativeTheme = "\r\n:host{color-scheme:dark;--bg:#202020;--surface:#292929;--line:#3c3c3c;--fg:#ededed;--muted:#aaa;--accent:#9bc7ee;--field:#353535;--hover:#414141;--page:#141414;font:14px/1.5 'Segoe UI',Arial,sans-serif}*{box-sizing:border-box}.backdrop{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:24px;color:var(--fg)}button,input,select{font:inherit;color:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}button:disabled,input:disabled{opacity:.45;cursor:default}button{background:var(--field);border:1px solid #535353;border-radius:4px;min-height:31px;padding:4px 12px}button:hover:not(:disabled){background:var(--hover)}.window{width:min(680px,100%);background:var(--bg);border:1px solid #505050;border-radius:8px;box-shadow:0 16px 50px #0006;overflow:hidden}.titlebar{height:44px;display:flex;align-items:center;padding-left:20px;gap:9px;background:#292929;border-bottom:1px solid #353535}.titlebar strong{font-size:15px;font-weight:600;letter-spacing:.05px}.titlebar .sep{color:#777}.titlebar span{font-size:12px;color:#bbb}.titlebar .close{margin-left:auto;border:0;background:transparent;border-radius:0;height:43px;width:45px;font-size:21px;font-weight:300;color:#bbb}.titlebar .close:hover{background:#ad2525;color:white}.tabs{display:flex;padding:0 18px;gap:19px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}.tabs button{border:0;border-radius:0;background:transparent;padding:13px 1px 11px;color:var(--muted);white-space:nowrap;min-height:44px;position:relative;font-size:13px}.tabs button[aria-selected=true]{color:var(--fg);font-weight:600}.tabs button[aria-selected=true]:after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent)}.tabs button:hover{color:var(--fg);background:transparent}.pane{padding:24px 24px 18px;min-height:300px}.pane[hidden]{display:none}.section{font-size:12px;font-weight:600;color:var(--muted);margin:0 0 7px}.row{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:53px;padding:10px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}.label{font-weight:500}.hint{font-size:12px;color:var(--muted);margin-top:3px;max-width:390px}.right{display:flex;gap:10px;align-items:center;flex-shrink:0}.switch{display:flex;align-items:center;gap:9px;cursor:pointer}.switch input{appearance:none;width:36px;height:19px;border:1px solid #707070;border-radius:12px;position:relative;background:#292929;margin:0;cursor:pointer}.switch input:before{content:'';position:absolute;top:3px;left:3px;width:11px;height:11px;background:#aaa;border-radius:50%}.switch input:checked{background:var(--accent);border-color:var(--accent)}.switch input:checked:before{left:20px;background:#243c51}.switch span{font-size:12px;color:var(--muted);min-width:23px}.choice{display:flex;gap:18px;align-items:center}.choice label{display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}.choice input, .check input{accent-color:var(--accent);width:14px;height:14px;margin:0}.range{display:flex;align-items:center;gap:10px;min-width:225px}.range input[type=range]{appearance:none;width:160px;height:4px;background:#555;border-radius:2px;cursor:pointer}.range input[type=range]::-webkit-slider-thumb{appearance:none;background:var(--accent);border:2px solid var(--bg);border-radius:50%;width:16px;height:16px}.range input[type=range]::-moz-range-thumb{background:var(--accent);border:2px solid var(--bg);border-radius:50%;width:13px;height:13px}.num{width:54px;text-align:right;padding:4px 6px;background:var(--surface);border:1px solid #555;border-radius:3px;font-variant-numeric:tabular-nums}.numwrap{display:flex;align-items:center;gap:3px;color:var(--muted);font-size:12px}.group{margin-top:20px}.check{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;padding:7px 0}.foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 24px;border-top:1px solid var(--line);background:#242424;color:var(--muted);font-size:12px}.foot select{border:0;background:transparent;color:var(--muted);padding:3px 0}.foot .done{min-width:76px}.subtle{font-size:12px;color:var(--muted);margin:8px 0 0}.table{width:100%;border-collapse:collapse;font-size:13px}.table th{text-align:left;color:var(--muted);font-weight:400;font-size:12px;padding:7px 8px;border-bottom:1px solid var(--line)}.table td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}.table th:first-child,.table td:first-child{padding-left:0}.table td:last-child{text-align:right;padding-right:0}.table button{min-height:25px;padding:1px 8px;font-size:12px}.empty{color:var(--muted);font-size:13px;padding:12px 0}.entry{display:flex;gap:8px;margin-top:10px}.entry input{flex:1;min-width:0;background:var(--surface);border:1px solid #555;border-radius:4px;padding:6px 9px}.entry button{white-space:nowrap}select{background:var(--field);border:1px solid #535353;border-radius:4px;padding:5px 9px}.link{color:var(--accent);text-decoration:none}.link:hover{text-decoration:underline}.notice{padding:9px 0;color:var(--muted);font-size:12px}.titlebar small{font-size:11px;color:var(--muted);margin-left:auto}.titlebar small+.close{margin-left:0}#reopen{display:none}.closed #reopen{display:block}.closed .window{display:none}.footnote{font-size:12px;color:var(--muted)}@media(max-width:560px){.backdrop{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:24px;color:var(--fg)}.tabs{gap:14px;padding:0 14px}.pane{padding:18px 16px}.row{flex-wrap:wrap;gap:8px}.range{min-width:0}.range input[type=range]{width:125px}.foot{padding:10px 16px}.titlebar{padding-left:16px}.table{font-size:12px}.right{flex-shrink:1}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}\r\n.backdrop{pointer-events:auto}.window{max-height:min(820px,calc(100vh - 24px));display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden}.pane{overflow:auto;overscroll-behavior:contain}.foot{flex:none}.tabs [aria-selected=true]{color:var(--fg)}.diagnostic-frame{padding:12px 0;border-bottom:1px solid var(--line)}.diagnostic-player{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 12px;padding:9px 0;color:var(--muted);font-size:12px}.diagnostic-error{color:#f1a9a9}.row .hint{max-width:390px}.field{display:grid;gap:6px;margin-top:10px;font-size:12px;color:var(--muted)}.field textarea{min-height:76px;width:100%;background:var(--surface);border:1px solid #555;border-radius:4px;padding:7px 9px;color:var(--fg);font:inherit}.group details{margin-top:7px}.group .table input{max-width:72px}@media(max-width:560px){.backdrop{padding:12px}.window{max-height:calc(100vh - 24px)}.diagnostic-player{grid-template-columns:repeat(2,minmax(0,1fr))}}.managed-row{padding:9px 0;border-bottom:1px solid var(--line)}.windows-app-row{display:block}.windows-app-heading{display:flex;align-items:center;justify-content:space-between;gap:14px}.app-copy{display:grid;gap:3px;min-width:0}.app-copy strong{font-size:13px;font-weight:500}.app-path{overflow-wrap:anywhere;color:var(--muted);font-size:12px}.app-controls{display:flex;align-items:center;gap:8px}.app-switch input{accent-color:var(--accent);width:16px;height:16px}.remove-button{min-height:26px;padding:1px 8px}.player-policy{margin-left:14px;border-top:0;padding:4px 0 6px}.player-policy summary{color:var(--muted);font-size:12px}.policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:8px 0;color:var(--muted);font-size:12px}.policy-grid label{display:grid;gap:4px}.policy-grid select,.policy-grid input{max-width:140px}.app-card{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}.app-card strong{font-size:13px;font-weight:500}.app-card small{display:block;color:var(--muted);overflow-wrap:anywhere}.agent-status{color:var(--muted)}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#8f8f8f}.status-dot[data-ok=true]{background:#8bc49e}.agent-note{padding-top:12px;color:var(--muted);font-size:12px}.section-actions{display:flex;gap:8px;flex-wrap:wrap}.subhint{color:var(--muted);font-size:12px}.notice[role=status]:empty{display:none}@media(max-width:560px){.windows-app-heading{align-items:flex-start}.policy-grid{grid-template-columns:1fr}.app-card{align-items:flex-start}}\r\n/* Fixed native window; only its pane content changes between sections. */\r\n.window{width:min(720px,calc(100vw - 24px));height:min(480px,calc(100dvh - 24px));min-height:min(420px,calc(100dvh - 24px));display:grid;grid-template-rows:48px auto minmax(0,1fr) auto;overflow:hidden}\r\n.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;padding:0 12px;overflow:visible}\r\n.tabs button{min-width:0;padding:10px 3px;white-space:nowrap;text-align:center;font-size:13px}\r\n.pane{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:18px 22px}\r\n.native-page[hidden]{display:none}\r\n.row{min-height:48px;padding:8px 0}\r\n.check{min-height:36px;gap:10px}\r\n.check input[type=checkbox],.choice input[type=radio]{appearance:auto;width:17px;height:17px;margin:0;accent-color:var(--accent);flex:none}\r\n.switch input:focus-visible{outline:2px solid var(--fg);outline-offset:3px}\r\n.switch input:disabled{opacity:.45}\r\n.choice label{min-height:36px;padding:4px 2px}\r\n.target-control{display:flex;align-items:center;gap:12px;min-width:min(280px,50%)}\r\n.target-control input{flex:1;min-width:90px}\r\n.native-footer{min-height:54px;display:flex;align-items:center;gap:16px;padding:8px 18px}\r\n.native-footer .support-link{margin-right:auto}\r\n.support-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:12px;white-space:nowrap}\r\n.support-link svg{width:14px;height:14px;color:#d38b87}\r\n.support-link:hover{color:var(--fg)}\r\n.native-footer .language-label{display:inline-flex;align-items:center;gap:7px;min-height:30px;line-height:normal;white-space:nowrap}\r\n.native-footer .language-label .language-text{display:inline-flex;align-items:center;min-height:30px;line-height:normal}\r\n.native-footer .language-label select{display:block;box-sizing:border-box;min-width:82px;height:30px;min-height:30px;margin:0;padding:0 21px 0 2px;line-height:30px;vertical-align:middle;appearance:none;background-color:transparent;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='m3 4.5 3 3 3-3' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 3px center;background-size:12px 12px}\r\n.native-footer .saved-status{min-width:0;color:var(--muted)}\r\n.native-page h2.section{font-size:13px;margin:0 0 8px}\r\n.native-page .group{margin-top:18px}\r\n.native-page .details-body{padding:8px 0}\r\n.path-details{font-size:12px;color:var(--muted);margin-top:3px}\r\n.path-details summary{cursor:pointer;min-height:24px;display:inline-flex;align-items:center}\r\n.path-details code{display:block;overflow-wrap:anywhere;padding:4px 0}\r\n.agent-status-row{display:flex;align-items:center;gap:8px;min-height:30px;color:var(--muted)}\r\n.agent-status-row[data-connected=true]{color:var(--fg)}\r\n.quick-links{display:flex;gap:8px;margin-top:16px}\r\n.quick-links button{min-height:36px}\r\n.diagnostic-row{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:6px 14px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}\r\n.diagnostic-players{grid-column:1/-1}\r\n@media(max-width:620px){.tabs{grid-template-columns:repeat(3,minmax(0,1fr));padding:0 8px}.tabs button{min-height:36px;padding:6px 2px}.window{height:min(520px,calc(100dvh - 20px));min-height:min(400px,calc(100dvh - 20px))}.native-footer{gap:8px;padding:8px 10px;flex-wrap:wrap}.native-footer .support-link{margin-right:auto}.native-footer .done{margin-left:auto}}\r\n@media(max-width:390px){.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.native-footer .language-label{flex:1}.native-footer .saved-status{display:none}.pane{padding:14px 12px}.diagnostic-row{grid-template-columns:1fr auto}}\r\n.table{table-layout:fixed}.table td{overflow-wrap:anywhere}.agent-status-row{font-size:13px}.switch:has(input:disabled){opacity:.55;cursor:not-allowed}\r\n\r\n.switch.app-switch input{width:36px;height:19px}.switch.app-switch span{min-width:23px}\r\n.remove-button{display:inline-grid;width:36px;height:36px;min-width:36px;min-height:36px;place-items:center;flex:none;padding:0;color:var(--fg);line-height:1}\r\n.remove-button svg{display:block;width:17px;height:17px;overflow:visible;stroke:currentColor}\r\n";
+globalThis.AudioDuckVersion = '2.8.9';
 (function (root) {
   "use strict";
-
   const EN = Object.freeze({
     brand: "ChatDuck", settings: "Settings", menuSettings: "Open ChatDuck settings", close: "Close", language: "Language", english: "English", spanish: "Spanish",
     tagline: "Control playback while you dictate", general: "General", webTab: "Web", windowsTab: "Windows", settingsSections: "Settings sections", diagnostics: "Diagnostics", refreshDiagnostics: "Scan open tabs", copyDiagnosticReport: "Copy anonymous report", copiedReport: "Report copied", diagnosticsPrivacy: "Shows player counts and actions only when requested. No URLs or page content.", diagnosticsNotLoaded: "Diagnostics are off until you scan.", noDiagnostics: "No active ChatDuck tabs found.", noDiagnosticResponse: "No response from this tab", players: "Players", playing: "Playing", ducked: "Ducked", restoreVerified: "Restored", diagnosticStatus: "Status", dictation: "Dictation", session: "Session", mode: "Mode", diagnosticTarget: "Target", appliedVolume: "Applied", originalVolumeLabel: "Original", currentVolumeLabel: "Current", diagnosticActive: "active", diagnosticInactive: "inactive", diagnosticNA: "not applicable", diagnosticReceived: "received", diagnosticNotReceived: "not received", diagnosticYes: "yes", diagnosticNo: "no", diagnosticUnverified: "unverified", diagnosticAudioDetected: "Audio detected", diagnosticAudioUncontrolled: "Audio detected but not controllable", diagnosticIframes: "iframes", diagnosticFallbackOff: "fallback off", nativeAutomation: "Automation", nativeScope: "Scope", nativeApps: "Desktop apps", nativeAppsHelp: "Manage selected Windows media players.", nativeAgent: "Windows agent", nativeConnected: "Connection", nativeAgentHelp: "Optional; required only to control desktop players.", nativeManage: "Manage", nativeVolumeHelp: "Only lowers player volume while dictation is active.", nativeNone: "None", nativeHost: "Domain", nativePrefs: "Preferences", nativeFallback: "Fallbacks", nativeOn: "On", nativeOff: "Off", nativeOverrideHelp: "Per-domain settings inherit the global mode and volume unless changed.", nativeExcludedHelp: "All compatible sites work automatically unless a domain is excluded.", restore: "Restore", excluded: "Excluded", error: "Error", detected: "Detected", notControlled: "Detected, not controlled", enabled: "Enabled", enabledHint: "Automatically control playback during dictation",
@@ -43,13 +42,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     activeLock: "Settings are locked while dictation is active.", whenDictating: "When dictation starts", pause: "Pause", duck: "Ducking",
     targetVolume: "Volume while dictating", minimum: "0%", maximum: "100%", webIntegrations: "Universal Web Control", webPlayers: "Web players",
     universalControl: "Universal web control", universalHint: "HTML audio and video on HTTP(S) pages; protected apps and exclusions are respected.", webAudioMuteFallback: "Mute a Web Audio-only tab", webAudioMuteFallbackHint: "Optional. Mutes the whole tab only when it is audible and no HTML media or iframe is present; restores the prior tab state and never unmutes a tab you muted.", excludeCurrent: "Exclude this website", addWebsiteOverride: "Add website override", websiteOverrides: "Per-website overrides", noWebsiteOverrides: "No overrides yet.", inherit: "Inherit global settings", enabledOverride: "Control enabled", excludedWebsites: "Excluded websites", pauseFallbackToDucking: "Use Ducking if Pause is unsupported", pauseFallbackToDuckingHint: "Off by default. Enable only to allow Ducking when Pause cannot be applied.", duckingFallback: "Pause if Ducking is unsupported", duckingFallbackHint: "Off by default. Turn on only if you want Pause as a fallback.",
-    discordMuteDuringDictation: "Mute Discord microphone while dictating",
-    discordDeafenDuringDictation: "Deafen Discord while dictating",
-    discordActivationMode: "Discord activation",
-    discordActivationAutomatic: "Automatic on every dictation",
-    discordActivationCtrlClick: "Only on Ctrl + click",
-    discordIntegration: "Discord Integration", discordUnavailable: "Uses Windows UI Automation with Discord's accessible mute and deafen controls. Requires an active call and a supported Discord interface language. Off by default.", discordMute: "Mute microphone", discordDeafen: "Deafen", discordDisabled: "Action during dictation", discordTest: "Read Discord state", discordStatus: "State not checked", discordCompatibility: "ChatGPT continues receiving microphone audio",
-    discordCallActive: "Call active", discordNoCall: "No active call", discordUnavailableState: "Discord state unavailable", discordMuted: "microphone muted", discordUnmuted: "microphone on", discordDeafened: "self-deafen on", discordUndeafened: "self-deafen off", discordWindowMinimized: "Discord minimized/offscreen",
     browserModeReady: "Browser mode — Ready", agentNotPaired: "Windows agent not paired", agentNotInstalled: "Windows agent not installed", agentPairHint: "Install and launch the optional agent, then pair this browser from its local prompt.", showPath: "Show path", repository: "Repository", license: "MIT license", browserModeOff: "Browser integrations are off", agentOptionalStatus: "Windows agent is optional",
     webAdvanced: "Custom websites and permissions", desktopAgentPrompt: "Want to control Spotify Desktop or Plex for Windows?", agentStepDownload: "Download Windows Agent.", agentStepInstall: "Install it.", agentStepPair: "Open ChatDuck Agent and follow the pairing instructions.",
     webPlayersHint: "Control selected supported sites", supportedSites: "Supported sites", html5Control: "HTML5 player control", customHtml5: "Custom HTML5 integration",
@@ -61,7 +53,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     customShortHelp: "Add a compatible website and allow its host access in Tampermonkey.", customPermissionHelp: "In Tampermonkey, open the userscript editor and add the exact match line shown for the site to its header. If you use the optional agent, the Authorize sites button can prepare these permissions for you.", permissionDetails: "Permission and setup details",
     emptySites: "No sites added yet.", windowsApps: "Windows apps", spotifyDesktop: "Spotify desktop", windowsMedia: "Windows Media Control · per-app volume",
     agentConnected: "Windows agent connected", agentDisconnected: "Windows agent disconnected", agentDetailsTitle: "Agent details and setup",
-    agentDiscordUpdateRequired: "Update the Windows agent to enable Discord controls",
     installWindowsAgent: "Install Windows Agent", agentInstallHint: "The optional Windows agent is needed only for desktop players. Downloading starts only when you choose this button.",
     agentStartup: "Start the agent when I sign in", agentStartupHint: "Optional. Off by default; applies only to your Windows account.",
     agentOptional: "The Windows component is optional and only needed for desktop players. It checks selected process names and paths, GSMTC playback state, and per-app WASAPI volume over authenticated localhost. It does not record microphone audio or change master volume.",
@@ -78,7 +69,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     appPathRequired: "Enter the full executable path first.", checkingApp: "Checking executable…", appPathInvalid: "The executable could not be validated.", validationError: "Validation failed. Check the path and try again.",
     removeApplication: "Remove application", removeSiteAction: "Remove site", removeServer: "Remove server", removeSite: "Remove {value}", removeApp: "Remove {value}", removeOrigin: "Remove {value}", statusPlaying: "Playing", statusPaused: "Paused", statusStopped: "Stopped", statusUnknown: "Unknown"
   });
-
   const ES = Object.freeze({
     brand: "ChatDuck", settings: "Configuración", menuSettings: "Abrir configuración de ChatDuck", close: "Cerrar", language: "Idioma", english: "Inglés", spanish: "Español",
     tagline: "Controla la reproducción mientras dictas", general: "General", webTab: "Web", windowsTab: "Windows", settingsSections: "Secciones de ajustes", diagnostics: "Diagnóstico", refreshDiagnostics: "Examinar pestañas abiertas", copyDiagnosticReport: "Copiar informe anónimo", copiedReport: "Informe copiado", diagnosticsPrivacy: "Muestra reproductores y acciones solo cuando lo solicitas. No muestra URL ni contenido.", diagnosticsNotLoaded: "El diagnóstico está desactivado hasta que lo solicites.", noDiagnostics: "No hay pestañas activas de ChatDuck.", noDiagnosticResponse: "Esta pestaña no respondió", players: "Reproductores", playing: "En reproducción", ducked: "Atenuados", restoreVerified: "Restaurado", diagnosticStatus: "Estado", dictation: "Dictado", session: "Sesión", mode: "Modo", diagnosticTarget: "Objetivo", appliedVolume: "Aplicado", originalVolumeLabel: "Original", currentVolumeLabel: "Actual", diagnosticActive: "activo", diagnosticInactive: "inactivo", diagnosticNA: "no aplicable", diagnosticReceived: "recibida", diagnosticNotReceived: "no recibida", diagnosticYes: "sí", diagnosticNo: "no", diagnosticUnverified: "sin verificar", diagnosticAudioDetected: "Audio detectado", diagnosticAudioUncontrolled: "Audio detectado pero no controlable", diagnosticIframes: "iframes", diagnosticFallbackOff: "alternativa desactivada", nativeAutomation: "Automatización", nativeScope: "Ámbito", nativeApps: "Aplicaciones de escritorio", nativeAppsHelp: "Administra reproductores multimedia seleccionados en Windows.", nativeAgent: "Agente de Windows", nativeConnected: "Conexión", nativeAgentHelp: "Opcional; solo se necesita para controlar reproductores de escritorio.", nativeManage: "Administrar", nativeVolumeHelp: "Solo reduce el volumen mientras el dictado está activo.", nativeNone: "Ninguno", nativeHost: "Dominio", nativePrefs: "Preferencias", nativeFallback: "Alternativas", nativeOn: "Sí", nativeOff: "No", nativeOverrideHelp: "Los ajustes por dominio heredan el modo y volumen globales salvo que se cambien.", nativeExcludedHelp: "Todos los sitios compatibles funcionan automáticamente salvo que excluyas el dominio.", restore: "Restauración", excluded: "Excluido", error: "Error", detected: "Detectado", notControlled: "Detectado, sin controlar", enabled: "Activado", enabledHint: "Controla la reproducción automáticamente durante el dictado",
@@ -86,13 +76,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     activeLock: "La configuración está bloqueada mientras el dictado está activo.", whenDictating: "Al empezar a dictar", pause: "Pausar", duck: "Ducking",
     targetVolume: "Volumen durante el dictado", minimum: "0 %", maximum: "100 %", webIntegrations: "Control web universal", webPlayers: "Reproductores web",
     universalControl: "Control web universal", universalHint: "Audio y vídeo HTML en páginas HTTP(S); respeta apps protegidas y exclusiones.", webAudioMuteFallback: "Silenciar una pestaña Web Audio", webAudioMuteFallbackHint: "Opcional. Silencia toda la pestaña solo si hay audio y no hay medios HTML ni iframes; restaura el estado previo y no quita un silencio manual.", excludeCurrent: "Excluir este sitio web", addWebsiteOverride: "Añadir regla para este sitio", websiteOverrides: "Reglas por sitio web", noWebsiteOverrides: "Todavía no hay reglas.", inherit: "Heredar configuración global", enabledOverride: "Control activado", excludedWebsites: "Sitios web excluidos", pauseFallbackToDucking: "Usar Ducking si Pausar no es compatible", pauseFallbackToDuckingHint: "Desactivado. Actívalo solo para permitir Ducking cuando no se pueda pausar.", duckingFallback: "Pausar si Ducking no es compatible", duckingFallbackHint: "Desactivado inicialmente. Actívalo solo si quieres Pausa como alternativa.",
-    discordMuteDuringDictation: "Silenciar el micrófono de Discord durante el dictado",
-    discordDeafenDuringDictation: "Ensordecer Discord durante el dictado",
-    discordActivationMode: "Activación de Discord",
-    discordActivationAutomatic: "Automática en cada dictado",
-    discordActivationCtrlClick: "Solo al pulsar Ctrl + clic",
-    discordIntegration: "Integración con Discord", discordUnavailable: "Usa UI Automation de Windows con los controles accesibles de mute y ensordecimiento. Requiere una llamada activa y un idioma de Discord compatible. Desactivada por defecto.", discordMute: "Silenciar micrófono", discordDeafen: "Ensordecer", discordDisabled: "Acción durante el dictado", discordTest: "Leer estado de Discord", discordStatus: "Estado sin consultar", discordCompatibility: "ChatGPT seguirá recibiendo el audio del micrófono",
-    discordCallActive: "Llamada activa", discordNoCall: "Sin llamada activa", discordUnavailableState: "Estado de Discord no disponible", discordMuted: "micrófono silenciado", discordUnmuted: "micrófono activo", discordDeafened: "autoensordecimiento activo", discordUndeafened: "autoensordecimiento inactivo", discordWindowMinimized: "Discord minimizado/fuera de pantalla",
     browserModeReady: "Modo navegador — Listo", agentNotPaired: "Agente de Windows sin emparejar", agentNotInstalled: "Agente de Windows no instalado", agentPairHint: "Instala e inicia el agente opcional y empareja este navegador desde su aviso local.", showPath: "Mostrar ruta", repository: "Repositorio", license: "Licencia MIT", browserModeOff: "Las integraciones web están desactivadas", agentOptionalStatus: "El agente de Windows es opcional",
     webAdvanced: "Sitios web y permisos personalizados", desktopAgentPrompt: "¿Quieres controlar Spotify de escritorio o Plex para Windows?", agentStepDownload: "Descarga el agente de Windows.", agentStepInstall: "Instálalo.", agentStepPair: "Abre ChatDuck Agent y sigue las instrucciones de emparejamiento.",
     webPlayersHint: "Control de sitios compatibles seleccionados", supportedSites: "Sitios compatibles", html5Control: "Control del reproductor HTML5", customHtml5: "Integración HTML5 personalizada",
@@ -104,7 +87,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     customShortHelp: "Añade un sitio compatible y autoriza su acceso de host en Tampermonkey.", customPermissionHelp: "En Tampermonkey, abre el editor del userscript y añade al encabezado la regla exacta que aparece para cada sitio. Si usas el agente opcional, el botón Autorizar sitios puede preparar esos permisos.", permissionDetails: "Detalles de permisos e instalación",
     emptySites: "Aún no hay sitios añadidos.", windowsApps: "Aplicaciones Windows", spotifyDesktop: "Spotify de escritorio", windowsMedia: "Control multimedia de Windows · volumen por aplicación",
     agentConnected: "Agente de Windows conectado", agentDisconnected: "Agente de Windows desconectado", agentDetailsTitle: "Detalles e instalación del agente",
-    agentDiscordUpdateRequired: "Actualiza el agente de Windows para usar los controles de Discord",
     installWindowsAgent: "Instalar agente de Windows", agentInstallHint: "El agente opcional de Windows solo se necesita para reproductores de escritorio. La descarga empieza únicamente al pulsar este botón.",
     agentStartup: "Iniciar el agente al entrar en Windows", agentStartupHint: "Opcional. Desactivado de forma predeterminada; solo afecta a tu cuenta de Windows.",
     agentOptional: "El componente de Windows es opcional y solo se necesita para reproductores de escritorio. Consulta los nombres y rutas de procesos seleccionados, estados GSMTC y volumen WASAPI por aplicación mediante localhost autenticado. No graba el micrófono ni cambia el volumen maestro.",
@@ -121,7 +103,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     appPathRequired: "Introduce primero la ruta completa del ejecutable.", checkingApp: "Comprobando ejecutable…", appPathInvalid: "No se pudo validar el ejecutable.", validationError: "Falló la validación. Revisa la ruta e inténtalo de nuevo.",
     removeApplication: "Eliminar aplicación", removeSiteAction: "Eliminar sitio", removeServer: "Eliminar servidor", removeSite: "Eliminar {value}", removeApp: "Eliminar {value}", removeOrigin: "Eliminar {value}", statusPlaying: "Reproduciendo", statusPaused: "En pausa", statusStopped: "Detenido", statusUnknown: "Desconocido"
   });
-
   const CATALOGS = Object.freeze({ en: EN, es: ES });
   const LANGUAGE_OPTIONS = Object.freeze([{ code: "en", labelKey: "english" }, { code: "es", labelKey: "spanish" }]);
   function normalizeLanguage(value) { return value === "es" ? "es" : "en"; }
@@ -130,7 +111,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     const template = CATALOGS[normalized][key] ?? CATALOGS.en[key] ?? key;
     return String(template).replace(/\{(\w+)\}/g, (match, name) => values[name] == null ? match : String(values[name]));
   }
-
   root.AudioDuckI18n = Object.freeze({ CATALOGS, LANGUAGE_OPTIONS, normalizeLanguage, translate });
 })(globalThis);
 
@@ -154,10 +134,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     fallbackToPause: false,
     excludedDomains: "",
     websiteOverrides: Object.freeze({}),
-    discord: Object.freeze({ enabled: false, mode: "mute" }),
-    discordActivationMode: "automatic",
-    discordMuteDuringDictation: false,
-    discordDeafenDuringDictation: false,
     spotifyDesktop: true,
     windowsApps: Object.freeze([]),
     voiceMode: false,
@@ -345,13 +321,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
       fallbackToPause: input.fallbackToPause === true,
       excludedDomains,
       websiteOverrides,
-      discord: {
-        enabled: input.discord?.enabled === true,
-        mode: input.discord?.mode === "deafen" ? "deafen" : "mute"
-      },
-      discordActivationMode: input.discordActivationMode === "ctrl-click" ? "ctrl-click" : "automatic",
-      discordMuteDuringDictation: input.discordMuteDuringDictation === true,
-      discordDeafenDuringDictation: input.discordDeafenDuringDictation === true,
       spotifyDesktop: input.spotifyDesktop !== false,
       windowsApps: normalizeWindowsApps(input.windowsApps),
       voiceMode: input.voiceMode === true,
@@ -1283,7 +1252,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
   // React briefly replaces ChatGPT's recording controls while the recorder is
   // still active. Require a stable inactive observation before restoring apps.
   const STOP_CONFIRMATION_MS = 250;
-  const START_GESTURE_MAX_AGE_MS = 1500;
 
   class ChatGPTDetector {
     constructor({ doc, win, getSettings, onStart, onStop, onState, onError }) {
@@ -1300,13 +1268,11 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
       this.observer = null;
       this.removers = [];
       this.suppressed = false;
-      this.pendingStartGesture = null;
-      this.startGestureTimer = 0;
     }
 
     start() {
       this.on(this.win, "pagehide", () => this.finish("chatgpt-tab-closed"), { once: true });
-      this.on(this.doc, "click", (event) => this.captureStartGesture(event), true);
+      this.on(this.doc, "click", (event) => this.detectNativeMicClick(event), true);
       try {
         const Observer = this.win.MutationObserver;
         if (typeof Observer !== "function") throw new Error("MutationObserver no disponible");
@@ -1350,37 +1316,14 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
         .filter(Boolean).join(" ").replace(/\s+/g, " ").slice(0, 160);
     }
 
-    captureStartGesture(event) {
+    detectNativeMicClick(event) {
       if (!event || !(Number(event.detail) > 0)) return;
       const origin = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
       const button = origin?.closest?.("button,[role='button']");
       if (!button) return;
       const label = this.buttonLabel(button);
       if (!DICTATION_CONTROL.test(label) || VOICE_ACTIVE.test(label) || this.isRecordingButton(button, label)) return;
-      if (this.pendingStartGesture && this.now() - this.pendingStartGesture.at <= START_GESTURE_MAX_AGE_MS) return;
-      this.clearStartGesture();
-      const gesture = { ctrlKey: event.ctrlKey === true, at: this.now() };
-      this.pendingStartGesture = gesture;
-      this.startGestureTimer = setTimeout(() => {
-        if (this.pendingStartGesture === gesture) this.pendingStartGesture = null;
-        this.startGestureTimer = 0;
-      }, START_GESTURE_MAX_AGE_MS);
       setTimeout(() => this.safeEvaluate("native-mic-click"), 0);
-    }
-
-    now() { return this.win.performance?.now?.() ?? Date.now(); }
-
-    takeStartGesture(kind) {
-      const gesture = this.pendingStartGesture;
-      this.clearStartGesture();
-      if (kind !== "dictation" || !gesture || this.now() - gesture.at > START_GESTURE_MAX_AGE_MS) return null;
-      return { ctrlKey: gesture.ctrlKey, clickToDetectionMs: Math.max(0, this.now() - gesture.at) };
-    }
-
-    clearStartGesture() {
-      if (this.startGestureTimer) clearTimeout(this.startGestureTimer);
-      this.startGestureTimer = 0;
-      this.pendingStartGesture = null;
     }
 
     visibleButtons() {
@@ -1440,8 +1383,7 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
       if (this.current || !this.getSettings().enabled) return;
       if (kind === "voice" && !this.getSettings().voiceMode) return;
       const id = `dictation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-      const gesture = this.takeStartGesture(kind);
-      this.current = { id, kind, startedAt: Date.now(), source, discordCtrlClick: gesture?.ctrlKey === true, clickToDetectionMs: gesture?.clickToDetectionMs ?? null };
+      this.current = { id, kind, startedAt: Date.now(), source };
       this.cancelStopTimer();
       this.onStart({ ...this.current });
       this.publish();
@@ -1468,7 +1410,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
       const ended = this.current;
       if (!ended) return;
       this.current = null;
-      this.clearStartGesture();
       this.onStop({ ...ended, reason, endedAt: Date.now(), detectedAt: timing.detectedAt ?? (this.win.performance?.now?.() ?? Date.now()), confirmationMs: timing.confirmationMs ?? 0 });
       this.publish();
     }
@@ -1495,7 +1436,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
       this.observer?.disconnect();
       this.removers.forEach((remove) => remove());
       this.cancelStopTimer();
-      this.clearStartGesture();
     }
   }
 
@@ -1597,18 +1537,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     } catch (_) { return false; }
   }
 
-  function discordPreferences(settings, status, startEvent = {}) {
-    const capabilities = Array.isArray(status?.capabilities) ? status.capabilities : [];
-    const activationAllowed = settings?.discordActivationMode !== "ctrl-click" || startEvent?.discordCtrlClick === true;
-    const mute = activationAllowed && settings?.discordMuteDuringDictation === true;
-    const deafen = activationAllowed && settings?.discordDeafenDuringDictation === true;
-    return {
-      discordMuteDuringDictation: mute && capabilities.includes("discordMute"),
-      discordDeafenDuringDictation: deafen && capabilities.includes("discordDeafen"),
-      unsupported: activationAllowed && ((settings?.discordMuteDuringDictation === true && !capabilities.includes("discordMute")) || (settings?.discordDeafenDuringDictation === true && !capabilities.includes("discordDeafen")))
-    };
-  }
-
   function setPairStatus(doc, message) {
     const update = () => { const status = doc?.querySelector?.("[data-pair-status]"); if (status) status.textContent = message; };
     if (doc?.readyState === "loading") doc.addEventListener("DOMContentLoaded", update, { once: true });
@@ -1645,12 +1573,11 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
 
   const api = {
     request,
-    discordPreferences,
     isPairPage,
     completePairing,
     setPairStatus,
     get configured() { return /^[a-f0-9]{64}$/i.test(token()); },
-    installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.8.8-rc.1/ChatDuck-Windows-Agent-2.8.8-rc.1-x64.msi"
+    installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.8.9/ChatDuck-Windows-Agent-2.8.9-x64.msi"
   };
   root.AudioDuckAgent = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
@@ -1739,8 +1666,6 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
       return settings.enabled && settings.webIntegration && settings.universalWebControl;
     }
     agentStatusKey(state, settings = this.getSettings()) {
-      if (state.agent?.ok && (settings.discordMuteDuringDictation || settings.discordDeafenDuringDictation) && state.agent.discordUnsupported) return "agentDiscordUpdateRequired";
-      if (state.agent?.ok && (settings.discordMuteDuringDictation || settings.discordDeafenDuringDictation) && !Array.isArray(state.agent.capabilities)) return "agentDiscordUpdateRequired";
       if (state.agent?.ok) return "agentConnected";
       if (root.AudioDuckAgent?.configured) return "agentDisconnected";
       return state.agent?.installed === false ? "agentNotInstalled" : "agentNotPaired";
@@ -1939,8 +1864,7 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
       const general = `${row("enabled", "enabled", "", settings.enabled, "")}<div class="row"><div class="label">${e("whenDictating")}</div><div class="choice">${["duck", "pause"].map((mode) => `<label><input type="radio" name="mode" data-mode="${mode}" data-focus="mode:${mode}" aria-label="${e(mode)}" ${settings.mode === mode ? "checked" : ""} ${disabled}>${e(mode)}</label>`).join("")}</div></div>${settings.mode === "duck" ? `<div class="row"><label class="label" for="native-target">${e("targetVolume")}</label><span class="target-control"><input id="native-target" type="range" min="0" max="100" step="1" value="${settings.targetVolumePercent}" data-setting="targetVolumePercent" data-focus="setting:targetVolumePercent" aria-label="${e("targetVolume")}" ${disabled}><output data-target-volume-output>${settings.targetVolumePercent}%</output></span></div>` : ""}`;
       const browser = `<div class="row"><div class="label">${e("universalControl")}<div class="hint">${e("universalHint")}</div></div><label class="switch"><input type="checkbox" data-web-control aria-label="${e("universalControl")}" ${webEnabled ? "checked" : ""} ${disabled}><span>${e(webEnabled ? "nativeOn" : "nativeOff")}</span></label></div><div class="group"><h2 class="section">${e("excludedWebsites")}</h2>${excludes}<form class="entry" data-form="exclude-domain"><input name="domain" placeholder="${e("excludedPlaceholder")}" aria-label="${e("excludedWebsites")}" required ${disabled}><button ${disabled}>${e("add")}</button></form><div class="notice" role="status" data-form-status="exclude-domain"></div></div><div class="group"><h2 class="section">${e("websiteOverrides")}</h2>${overrides ? `<table class="table"><thead><tr><th>${e("nativeHost")}</th><th>${e("enabled")}</th><th>${e("mode")}</th><th>${e("target")}</th><th></th></tr></thead><tbody>${overrides}</tbody></table>` : `<div class="empty">${e("noWebsiteOverrides")}</div>`}<form class="entry" data-form="website-override"><input name="domain" placeholder="${e("excludedPlaceholder")}" aria-label="${e("nativeHost")}" required ${disabled}><button ${disabled}>${e("add")}</button></form><div class="notice" role="status" data-form-status="website-override"></div></div>`;
       const agentStatusKey = this.agentStatusKey(state, settings);
-      const discordMode = `<div class="group"><h2 class="section">${e("discordIntegration")}</h2><div class="row"><div class="label">${e("discordActivationMode")}</div><div class="choice" role="radiogroup" aria-label="${e("discordActivationMode")}">${[["automatic", "discordActivationAutomatic"], ["ctrl-click", "discordActivationCtrlClick"]].map(([value, label]) => `<label><input type="radio" name="discordActivationMode" value="${value}" data-setting="discordActivationMode" data-focus="setting:discordActivationMode" aria-label="${e(label)}" ${settings.discordActivationMode === value ? "checked" : ""} ${disabled}>${e(label)}</label>`).join("")}</div></div>${row("discordMuteDuringDictation", "discordMuteDuringDictation")}${row("discordDeafenDuringDictation", "discordDeafenDuringDictation")}</div>`;
-      const desktop = `<div class="agent-status-row" data-connected="${agentConnected}" role="status"><span class="status-dot" data-status-dot data-ok="${agentConnected}" aria-hidden="true"></span><span data-agent-status>${e(agentStatusKey)}</span></div>${!agentConfigured ? `<p class="subtle">${e("agentPairHint")}</p>${installUrl ? `<a class="link" href="${this.escape(installUrl)}" target="_blank" rel="noopener noreferrer">${e("installWindowsAgent")}</a>` : ""}` : ""}${discordMode}<div class="group"><h2 class="section">${e("windowsApps")}</h2>${apps}<div class="entry"><button type="button" data-agent-control data-action="add-app" ${agentConnected && !state.sessionActive ? "" : "disabled"}>${e("addApp")}</button><button type="button" data-agent-control data-action="refresh-apps" ${agentConnected ? "" : "disabled"}>${e("refreshApps")}</button></div>${agentConnected ? `<label class="check"><input type="checkbox" data-agent-autostart aria-label="${e("agentStartup")}" ${state.agent.autostartEnabled ? "checked" : ""} ${state.sessionActive ? "disabled" : ""}>${e("agentStartup")}</label>` : ""}<details class="detected-details" data-section="detected-sessions"><summary>${e("detectedSessions")}</summary><div class="detected">${detected}</div></details></div>`;
+      const desktop = `<div class="agent-status-row" data-connected="${agentConnected}" role="status"><span class="status-dot" data-status-dot data-ok="${agentConnected}" aria-hidden="true"></span><span data-agent-status>${e(agentStatusKey)}</span></div>${!agentConfigured ? `<p class="subtle">${e("agentPairHint")}</p>${installUrl ? `<a class="link" href="${this.escape(installUrl)}" target="_blank" rel="noopener noreferrer">${e("installWindowsAgent")}</a>` : ""}` : ""}<div class="group"><h2 class="section">${e("windowsApps")}</h2>${apps}<div class="entry"><button type="button" data-agent-control data-action="add-app" ${agentConnected && !state.sessionActive ? "" : "disabled"}>${e("addApp")}</button><button type="button" data-agent-control data-action="refresh-apps" ${agentConnected ? "" : "disabled"}>${e("refreshApps")}</button></div>${agentConnected ? `<label class="check"><input type="checkbox" data-agent-autostart aria-label="${e("agentStartup")}" ${state.agent.autostartEnabled ? "checked" : ""} ${state.sessionActive ? "disabled" : ""}>${e("agentStartup")}</label>` : ""}<details class="detected-details" data-section="detected-sessions"><summary>${e("detectedSessions")}</summary><div class="detected">${detected}</div></details></div>`;
       const advanced = `<div class="group"><h2 class="section">${e("transitions")}</h2>${[["fadeOutMs", "fadeOut", 1000], ["fadeInMs", "fadeIn", 1500]].map(([key, label, max]) => `<label class="row"><span class="label">${e(label)}</span><span class="target-control"><input type="range" min="0" max="${max}" step="25" value="${settings[key]}" data-setting="${key}" data-focus="setting:${key}" aria-label="${e(label)}" ${disabled}><output data-fade-label="${key}">${settings[key]} ms</output></span></label>`).join("")}</div><details class="group" data-section="fallbacks"><summary>${e("nativeFallback")}</summary><div class="details-body"><label class="check"><input type="checkbox" data-setting="fallbackDucking" aria-describedby="fallback-duck-hint" ${settings.fallbackDucking ? "checked" : ""} ${disabled}>${e("pauseFallbackToDucking")}</label><div class="hint" id="fallback-duck-hint">${e("pauseFallbackToDuckingHint")}</div><label class="check"><input type="checkbox" data-setting="fallbackToPause" aria-describedby="fallback-pause-hint" ${settings.fallbackToPause ? "checked" : ""} ${disabled}>${e("duckingFallback")}</label><div class="hint" id="fallback-pause-hint">${e("duckingFallbackHint")}</div><label class="check"><input type="checkbox" data-setting="webAudioMuteFallback" aria-describedby="web-audio-hint" ${settings.webAudioMuteFallback ? "checked" : ""} ${disabled}>${e("webAudioMuteFallback")}</label><div class="hint" id="web-audio-hint">${e("webAudioMuteFallbackHint")}</div><label class="check"><input type="checkbox" data-setting="voiceMode" aria-describedby="voice-mode-hint" ${settings.voiceMode ? "checked" : ""} ${disabled}>${e("voiceMode")}</label><div class="hint" id="voice-mode-hint">${e("voiceModeHint")}</div></div></details>`;
       const diagnostics = `<p class="subtle">${e("diagnosticsPrivacy")}</p><div class="entry"><button type="button" data-action="refresh-diagnostics">${e("refreshDiagnostics")}</button><button type="button" data-action="copy-diagnostics" ${this.diagnosticState === null ? "disabled" : ""}>${e("copyDiagnosticReport")}</button></div><div class="diagnostic-summary" aria-live="polite">${this.diagnosticState === null ? `<div class="empty">${e("diagnosticsNotLoaded")}</div>` : this.diagnosticState.map((frame) => `<article class="diagnostic-row"><strong>${this.escape(frame.host || e("noDiagnosticResponse"))}</strong><span>${e("players")}: ${frame.htmlMediaCount} · ${e("playing")}: ${frame.playingCount}</span><span>${e("ducked")}: ${frame.controlledCount}</span><details class="diagnostic-players"><summary>${e("diagnosticStatus")}: ${this.escape(frame.status)} · ${e("restore")}: ${frame.lastRestore?.verified ? e("restoreVerified") : e("diagnosticUnverified")}</summary>${frame.players.map((player) => `<div class="diagnostic-player"><strong>${this.escape(player.mediaType)} · ${this.escape(player.action)}</strong><span>${e("originalVolumeLabel")}: ${player.originalVolumePercent ?? "—"}%</span><span>${e("appliedVolume")}: ${player.appliedVolumePercent ?? "—"}%</span><span>${e("currentVolumeLabel")}: ${player.currentVolumePercent ?? "—"}%</span></div>`).join("")}${frame.error ? `<p class="diagnostic-error">${e("error")}: ${this.escape(frame.error)}</p>` : ""}</details></article>`).join("") || `<div class="empty">${e("noDiagnostics")}</div>`}</div>`;
       const about = `<h2 class="section">ChatDuck ${this.escape(version)}</h2><p><a class="link" href="https://github.com/fevegit/chatduck" target="_blank" rel="noopener noreferrer">${e("repository")}</a> · <a class="link" href="https://github.com/fevegit/chatduck/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">${e("license")}</a></p>`;
@@ -2274,14 +2198,15 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
   const host = core.hostFor(location.href);
   const isSettingsPage = core.isSettingsPage(location.href);
   const isChatGPT = core.isChatGPT(location.href) && !isSettingsPage;
-  let settings = core.normalizeSettings(GM_getValue("settings", core.DEFAULTS));
+  const storedSettings = GM_getValue("settings", core.DEFAULTS);
+  let settings = core.normalizeSettings(storedSettings);
+  if (storedSettings && typeof storedSettings === "object" && ["discord", "discordActivationMode", "discordMuteDuringDictation", "discordDeafenDuringDictation"].some((key) => Object.hasOwn(storedSettings, key)))
+    GM_setValue("settings", settings);
   let tabObject = null;
   let tabId = "";
   let frameId = "";
   let chatState = { recognized: isChatGPT, active: false, kind: null };
   let agentState = { ok: false, error: "Conectando…" };
-  let agentStatusUpdatedAt = 0;
-  let lastAgentStatusRoundTripMs = null;
   let pendingNativeBegin = Promise.resolve();
   let currentSession = null;
   let detector = null;
@@ -2676,11 +2601,9 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
       const result = await root.AudioDuckAgent.request({ command, ...values }, command === "status" ? 600 : command === "heartbeat" ? 400 : 1800);
       const roundTripMs = monotonicNow() - startedAt;
       if (command === "status") {
-        agentStatusUpdatedAt = monotonicNow();
-        lastAgentStatusRoundTripMs = roundTripMs;
       }
       const lastControl = ["begin", "restore", "restore-all"].includes(command)
-        ? { command, sessionId: values.sessionId || result.correlationId || "", roundTripMs, elapsedMs: result.durationMs ?? null, timing: result.timing || null, discordTiming: result.discordTiming || null }
+        ? { command, sessionId: values.sessionId || result.correlationId || "", roundTripMs, elapsedMs: result.durationMs ?? null, timing: result.timing || null }
         : agentState.lastControl;
       agentState = { ok: result.ok !== false, ...result, lastControl, error: result.error || "" };
       if (command === "restore" && lastRestoreTrace?.sessionId === values.sessionId) {
@@ -2694,7 +2617,7 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     }
   }
 
-  async function startGlobalSession(kind = "dictation", detectorEventId = null, includeNative = false, discordCtrlClick = false, clickToDetectionMs = null) {
+  async function startGlobalSession(kind = "dictation", detectorEventId = null, includeNative = false) {
     if (!settings.enabled) return null;
     const previous = getSession();
     if (sessionFresh(previous)) {
@@ -2703,43 +2626,14 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
     }
     const now = Date.now();
     const session = {
-      id: randomId(), phase: "active", kind, includeNative, ownerTabId: tabId, discordCtrlClick: discordCtrlClick === true,
-      clickToDetectionMs: Number.isFinite(clickToDetectionMs) ? clickToDetectionMs : null,
+      id: randomId(), phase: "active", kind, includeNative, ownerTabId: tabId,
       startedAt: now, heartbeatAt: now, settings: { ...settings }
     };
     currentSession = session;
     if (detectorEventId) detectorSessions.set(detectorEventId, session.id);
     GM_setValue("session", session);
     if (isChatGPT || includeNative) {
-      const requested = { ...settings };
-      const discordActivated = (requested.discordActivationMode !== "ctrl-click" || session.discordCtrlClick) && (requested.discordMuteDuringDictation || requested.discordDeafenDuringDictation);
-      const cachedStatusFresh = agentState.ok && Array.isArray(agentState.capabilities) && monotonicNow() - agentStatusUpdatedAt < 10_000;
-      const requestedStatusRoundTripMs = discordActivated && !cachedStatusFresh;
-      if (requestedStatusRoundTripMs) lastAgentStatusRoundTripMs = null;
-      const statusRequest = requestedStatusRoundTripMs ? nativeCommand("status") : Promise.resolve(agentState);
-      pendingNativeBegin = statusRequest.then((status) => {
-        if (getSession()?.id !== session.id || !sessionFresh(getSession())) return null;
-        const discord = root.AudioDuckAgent.discordPreferences(requested, status, { discordCtrlClick: session.discordCtrlClick });
-        if (discord.unsupported) {
-          agentState = { ...agentState, ok: true, discordUnsupported: true };
-          publishStatus();
-        }
-        return nativeCommand("begin", { sessionId: session.id, settings: { ...requested, discordMuteDuringDictation: discord.discordMuteDuringDictation, discordDeafenDuringDictation: discord.discordDeafenDuringDictation, discord: { enabled: false, mode: "mute" } } }).then((result) => {
-          if (getSession()?.id === session.id && result) {
-            const activationTiming = {
-              clickToDetectionMs: session.clickToDetectionMs,
-              statusRoundTripMs: requestedStatusRoundTripMs ? lastAgentStatusRoundTripMs : null,
-              beginRoundTripMs: agentState.lastControl?.roundTripMs ?? null,
-              beginAgentMs: agentState.lastControl?.elapsedMs ?? null,
-              discord: result.discordTiming || null
-            };
-            agentState = { ...agentState, lastControl: { ...agentState.lastControl, activationTiming } };
-            console.debug("[ChatDuck] Discord activation timings", activationTiming);
-            publishStatus();
-          }
-          return result;
-        });
-      }).catch(() => null);
+      pendingNativeBegin = nativeCommand("begin", { sessionId: session.id, settings: { ...settings } }).catch((error) => { addError(error); return null; });
     }
     publishStatus();
     return session;
@@ -2804,7 +2698,7 @@ globalThis.AudioDuckVersion = '2.8.8-rc.1';
       getSettings: () => settings,
       onStart: (event) => {
         chatState = { recognized: true, active: true, kind: event.kind, source: event.source };
-        startGlobalSession(event.kind, event.id, false, event.discordCtrlClick === true, event.clickToDetectionMs).catch(addError);
+        startGlobalSession(event.kind, event.id).catch(addError);
         publishStatus();
       },
       onStop: (event) => {

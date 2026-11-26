@@ -2,7 +2,7 @@
 
 **Control web playback while you dictate to ChatGPT.**
 
-> **Experimental branch — v2.8.4-alpha.1.** Not released. The userscript permission scope and universal media engine have changed. An off-by-default Windows option can mute Discord's microphone during dictation; minimized-window behavior still needs isolated validation.
+> **Local product version: 2.8.9.** This consolidated build is prepared locally and has not been published.
 
 [**Install ChatDuck (userscript)**](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) · [Español](README.es.md) · [Report a bug](https://github.com/fevegit/chatduck/issues)
 
@@ -35,7 +35,7 @@ Known external issue: [Brave/Chromium and ChromeWideEchoCancellation](docs/known
 
 The agent is only needed for Spotify Desktop, Plex for Windows, or another compatible Windows desktop player. Browser Mode remains usable without it.
 
-1. Download the [ChatDuck Windows Agent 2.7.6-beta.1 MSI](https://github.com/fevegit/chatduck/releases/download/v2.7.6-beta.1/ChatDuck-Windows-Agent-2.7.6-beta.1-x64.msi).
+1. Use the local [ChatDuck Windows Agent 2.8.9 MSI](out/ChatDuck-Windows-Agent-2.8.9-x64.msi).
 2. Install it, then open **ChatDuck Agent** from the Windows Start menu.
 3. Follow the pairing instructions shown by the agent.
 
@@ -45,13 +45,11 @@ Volume restoration depends on the audio session remaining available and its stat
 
 See [agent security](docs/SECURITY.md), [permissions](docs/PERMISSIONS.md), and [uninstall instructions](docs/UNINSTALL.md) for details.
 
-## Beta status
+## Build status
 
 - The project owner manually tested the earlier 2.7.4 build with ChatGPT, Spotify Web and Desktop, YouTube, Plex Web, and Plex for Windows (Ducking). This is not a claim that the current beta has been verified on other machines.
-- Current beta checks and outstanding work are listed in [release readiness](docs/release-readiness.md).
+- The local 2.8.9 build has not been published; see `out/validation-report.md` for its build and test results.
 - Report reproducible issues with your browser, Windows version where relevant, player, and steps. Do not include pairing codes, tokens, personal paths, or unreviewed logs.
-
-Discord controller code remains experimental and isolated from the generated product UI and normal agent commands. Do not use it on a live call until minimized-window behavior and recovery have been validated in an authorized controlled call. SendInput is not used for Discord audio.
 
 ## Privacy, uninstall, and support
 

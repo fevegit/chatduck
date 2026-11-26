@@ -7,7 +7,7 @@ test("ChatDuck release metadata scopes universal matches and keeps its token iso
   const root = path.join(__dirname, "..");
   const source = fs.readFileSync(path.join(root, "ChatGPT-Audio-Ducking.user.js"), "utf8");
   const header = source.slice(0, source.indexOf("// ==/UserScript=="));
-  assert.match(header, /@version\s+2\.8\.8-rc\.1/);
+  assert.match(header, /@version\s+2\.8\.9/);
   assert.match(header, /@name\s+ChatGPT Audio Ducking/);
   assert.match(header, /@name:en\s+ChatGPT Audio Ducking/);
   assert.match(header, /@name:es\s+Audio Ducking para ChatGPT/);
@@ -32,7 +32,8 @@ test("ChatDuck release metadata scopes universal matches and keeps its token iso
   const entry = fs.readFileSync(path.join(root, "src", "entry.js"), "utf8");
   assert.match(entry, /GM_registerMenuCommand\(root\.AudioDuckI18n\.translate\(settings\.language, "menuSettings"\)/);
   assert.match(entry, /settingsPage\.open\(\)/);
-  assert.match(entry, /root\.AudioDuckAgent\.discordPreferences\(requested, status, \{ discordCtrlClick: session\.discordCtrlClick \}\)/);
+  assert.doesNotMatch(entry, /discordPreferences|discordCtrlClick|discordTiming/i);
+  assert.doesNotMatch(source, /Mute Discord microphone while dictating|Deafen Discord while dictating|discordPreferences|discordCtrlClick|discordTiming/i);
   assert.match(entry, /window\.top === window && typeof GM_audio !== "undefined"/);
   assert.match(entry, /async function nativeCommand\(command, values = \{\}\) \{\s*if \(!root\.AudioDuckAgent\?\.configured\) return null;/);
   assert.doesNotMatch(entry, /GM_openInTab/);

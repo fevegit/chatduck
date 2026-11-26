@@ -7,7 +7,7 @@ $projectPath = Join-Path $PSScriptRoot '..\agent\AudioDuckingAgent.csproj'
 [xml]$project = Get-Content -LiteralPath $projectPath -Raw
 $Version = [string]$project.Project.PropertyGroup.Version
 if ([string]::IsNullOrWhiteSpace($Version)) { throw 'The product version must be defined once in agent/AudioDuckingAgent.csproj.' }
-if ($Version -notmatch '^(\d+)\.(\d+)\.(\d+)-(alpha|rc)\.(\d+)$') { throw 'Version must be numeric major.minor.patch-alpha|rc.number.' }
+if ($Version -notmatch '^(\d+)\.(\d+)\.(\d+)(?:-(alpha|rc)\.(\d+))?$') { throw 'Version must be numeric major.minor.patch with an optional alpha|rc suffix.' }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $out = Join-Path $root 'out'
 $work = Join-Path $out '.work'
@@ -17,6 +17,7 @@ $productVersion = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
 $outputMsi = Join-Path $out "ChatDuck-Windows-Agent-$Version-x64.msi"
 $outputScript = Join-Path $out 'ChatGPT-Audio-Ducking.user.js'
 $dotnet = Join-Path $root '.tools\dotnet\dotnet.exe'
+if (-not (Test-Path -LiteralPath $dotnet)) { $dotnet = Join-Path $env:USERPROFILE '.dotnet\dotnet.exe' }
 if (-not (Test-Path -LiteralPath $dotnet)) { $dotnet = 'dotnet' }
 $wix = (Get-Command wix -ErrorAction Stop).Source
 $sourceRevision = (& git -C $root rev-parse --verify HEAD 2>$null).Trim()
@@ -70,7 +71,7 @@ $(($escapedFiles -join "`r`n"))
 if ($LASTEXITCODE -ne 0) { throw 'WiX MSI build failed.' }
 if (-not (Test-Path -LiteralPath $outputMsi)) { throw 'MSI was not produced.' }
 
-$validationReport = Join-Path $out 'installer-validation.txt'
+$validationReport = Join-Path $out 'validation-report.md'
 $validation = & $wix msi validate -intermediateFolder (Join-Path $work 'ice-validation') $outputMsi 2>&1
 $validationExit = $LASTEXITCODE
 $validationText = ($validation | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
@@ -122,5 +123,12 @@ $agentVerification = & (Join-Path $root 'tests\verify-msi-agent-version.ps1') -M
     -PublishAgentPath (Join-Path $publish 'ChatGPTAudioDuckingAgent.exe')
 $validationText += [Environment]::NewLine + [Environment]::NewLine + 'Extracted MSI binary/protocol/userscript consistency test:' + [Environment]::NewLine + [string]$agentVerification
 [IO.File]::WriteAllText($validationReport, $validationText + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+
+$manifest = Join-Path $out 'SHA256SUMS.txt'
+$hashLines = @($outputMsi, $outputScript) | ForEach-Object {
+    $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $_
+    "$($hash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($_))"
+}
+[IO.File]::WriteAllLines($manifest, $hashLines, [Text.UTF8Encoding]::new($false))
 
 Write-Output "Built $outputMsi and $outputScript ($Version); ICE results: $validationReport."

@@ -10,14 +10,15 @@
   const host = core.hostFor(location.href);
   const isSettingsPage = core.isSettingsPage(location.href);
   const isChatGPT = core.isChatGPT(location.href) && !isSettingsPage;
-  let settings = core.normalizeSettings(GM_getValue("settings", core.DEFAULTS));
+  const storedSettings = GM_getValue("settings", core.DEFAULTS);
+  let settings = core.normalizeSettings(storedSettings);
+  if (storedSettings && typeof storedSettings === "object" && ["discord", "discordActivationMode", "discordMuteDuringDictation", "discordDeafenDuringDictation"].some((key) => Object.hasOwn(storedSettings, key)))
+    GM_setValue("settings", settings);
   let tabObject = null;
   let tabId = "";
   let frameId = "";
   let chatState = { recognized: isChatGPT, active: false, kind: null };
   let agentState = { ok: false, error: "Conectando…" };
-  let agentStatusUpdatedAt = 0;
-  let lastAgentStatusRoundTripMs = null;
   let pendingNativeBegin = Promise.resolve();
   let currentSession = null;
   let detector = null;
@@ -412,11 +413,9 @@
       const result = await root.AudioDuckAgent.request({ command, ...values }, command === "status" ? 600 : command === "heartbeat" ? 400 : 1800);
       const roundTripMs = monotonicNow() - startedAt;
       if (command === "status") {
-        agentStatusUpdatedAt = monotonicNow();
-        lastAgentStatusRoundTripMs = roundTripMs;
       }
       const lastControl = ["begin", "restore", "restore-all"].includes(command)
-        ? { command, sessionId: values.sessionId || result.correlationId || "", roundTripMs, elapsedMs: result.durationMs ?? null, timing: result.timing || null, discordTiming: result.discordTiming || null }
+        ? { command, sessionId: values.sessionId || result.correlationId || "", roundTripMs, elapsedMs: result.durationMs ?? null, timing: result.timing || null }
         : agentState.lastControl;
       agentState = { ok: result.ok !== false, ...result, lastControl, error: result.error || "" };
       if (command === "restore" && lastRestoreTrace?.sessionId === values.sessionId) {
@@ -430,7 +429,7 @@
     }
   }
 
-  async function startGlobalSession(kind = "dictation", detectorEventId = null, includeNative = false, discordCtrlClick = false, clickToDetectionMs = null) {
+  async function startGlobalSession(kind = "dictation", detectorEventId = null, includeNative = false) {
     if (!settings.enabled) return null;
     const previous = getSession();
     if (sessionFresh(previous)) {
@@ -439,43 +438,14 @@
     }
     const now = Date.now();
     const session = {
-      id: randomId(), phase: "active", kind, includeNative, ownerTabId: tabId, discordCtrlClick: discordCtrlClick === true,
-      clickToDetectionMs: Number.isFinite(clickToDetectionMs) ? clickToDetectionMs : null,
+      id: randomId(), phase: "active", kind, includeNative, ownerTabId: tabId,
       startedAt: now, heartbeatAt: now, settings: { ...settings }
     };
     currentSession = session;
     if (detectorEventId) detectorSessions.set(detectorEventId, session.id);
     GM_setValue("session", session);
     if (isChatGPT || includeNative) {
-      const requested = { ...settings };
-      const discordActivated = (requested.discordActivationMode !== "ctrl-click" || session.discordCtrlClick) && (requested.discordMuteDuringDictation || requested.discordDeafenDuringDictation);
-      const cachedStatusFresh = agentState.ok && Array.isArray(agentState.capabilities) && monotonicNow() - agentStatusUpdatedAt < 10_000;
-      const requestedStatusRoundTripMs = discordActivated && !cachedStatusFresh;
-      if (requestedStatusRoundTripMs) lastAgentStatusRoundTripMs = null;
-      const statusRequest = requestedStatusRoundTripMs ? nativeCommand("status") : Promise.resolve(agentState);
-      pendingNativeBegin = statusRequest.then((status) => {
-        if (getSession()?.id !== session.id || !sessionFresh(getSession())) return null;
-        const discord = root.AudioDuckAgent.discordPreferences(requested, status, { discordCtrlClick: session.discordCtrlClick });
-        if (discord.unsupported) {
-          agentState = { ...agentState, ok: true, discordUnsupported: true };
-          publishStatus();
-        }
-        return nativeCommand("begin", { sessionId: session.id, settings: { ...requested, discordMuteDuringDictation: discord.discordMuteDuringDictation, discordDeafenDuringDictation: discord.discordDeafenDuringDictation, discord: { enabled: false, mode: "mute" } } }).then((result) => {
-          if (getSession()?.id === session.id && result) {
-            const activationTiming = {
-              clickToDetectionMs: session.clickToDetectionMs,
-              statusRoundTripMs: requestedStatusRoundTripMs ? lastAgentStatusRoundTripMs : null,
-              beginRoundTripMs: agentState.lastControl?.roundTripMs ?? null,
-              beginAgentMs: agentState.lastControl?.elapsedMs ?? null,
-              discord: result.discordTiming || null
-            };
-            agentState = { ...agentState, lastControl: { ...agentState.lastControl, activationTiming } };
-            console.debug("[ChatDuck] Discord activation timings", activationTiming);
-            publishStatus();
-          }
-          return result;
-        });
-      }).catch(() => null);
+      pendingNativeBegin = nativeCommand("begin", { sessionId: session.id, settings: { ...settings } }).catch((error) => { addError(error); return null; });
     }
     publishStatus();
     return session;
@@ -540,7 +510,7 @@
       getSettings: () => settings,
       onStart: (event) => {
         chatState = { recognized: true, active: true, kind: event.kind, source: event.source };
-        startGlobalSession(event.kind, event.id, false, event.discordCtrlClick === true, event.clickToDetectionMs).catch(addError);
+        startGlobalSession(event.kind, event.id).catch(addError);
         publishStatus();
       },
       onStop: (event) => {

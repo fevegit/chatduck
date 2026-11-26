@@ -1,5 +1,12 @@
 # Changelog
 
+# 2.8.9
+
+- Removed Discord voice Mute/Deafen automation, its activation options and Ctrl+click handling, UI Automation controller, protocol capabilities, recovery state, timers, benchmarks and dedicated tests.
+- Old saved Discord-only preferences are ignored during normalization; all other browser and Windows application preferences remain intact.
+- Kept generic Windows media-session support and communication-site exclusions unchanged.
+- Consolidated the product version at 2.8.9 and uses the existing per-user framework-dependent MSI build path.
+
 # 2.8.4-alpha.5 — Discord latency and resource instrumentation
 
 - Dispatch Discord control as soon as the dictation begin request reaches the agent, concurrently with existing media ducking, removing the media fade from Discord's activation critical path.

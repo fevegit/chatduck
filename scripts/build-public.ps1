@@ -3,7 +3,7 @@ param(
     [ValidatePattern('^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/?$')]
     [string]$RepositoryUrl,
     [Parameter(Mandatory = $true)]
-    [ValidatePattern('^\d+\.\d+\.\d+-(?:alpha|rc)\.\d+$')]
+    [ValidatePattern('^\d+\.\d+\.\d+(?:-(?:alpha|rc)\.\d+)?$')]
     [string]$Version,
     [string]$AgentDownloadUrl = '',
     [string]$OutputPath = ''

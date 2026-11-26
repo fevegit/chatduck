@@ -2,7 +2,7 @@
 
 **Controla la reproducción web mientras dictas a ChatGPT.**
 
-> **Rama experimental — v2.8.4-alpha.1.** No publicada. Han cambiado los permisos del userscript y el motor multimedia universal. Una opción de Windows desactivada por defecto puede silenciar el micrófono de Discord durante el dictado; aún requiere validación aislada con Discord minimizado.
+> **Versión local del producto: 2.8.9.** Esta compilación consolidada se ha preparado localmente y no se ha publicado.
 
 [**Instalar ChatDuck (userscript)**](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) · [English](README.md) · [Reportar un fallo](https://github.com/fevegit/chatduck/issues)
 
@@ -35,7 +35,7 @@ Incidencia externa conocida: [Brave/Chromium y ChromeWideEchoCancellation](docs/
 
 El agente hace falta para Spotify de escritorio, Plex para Windows u otro reproductor de escritorio compatible. El Modo navegador sigue funcionando sin él.
 
-1. Descarga el [MSI ChatDuck Windows Agent 2.7.6-beta.1](https://github.com/fevegit/chatduck/releases/download/v2.7.6-beta.1/ChatDuck-Windows-Agent-2.7.6-beta.1-x64.msi).
+1. Usa el [MSI local de ChatDuck Windows Agent 2.8.9](out/ChatDuck-Windows-Agent-2.8.9-x64.msi).
 2. Instálalo y abre **ChatDuck Agent** desde el menú Inicio de Windows.
 3. Sigue las instrucciones de emparejamiento que muestra el agente.
 
@@ -45,13 +45,11 @@ La restauración del volumen depende de que la sesión de audio siga disponible 
 
 Consulta la [seguridad del agente](docs/SECURITY.md), los [permisos](docs/PERMISSIONS.md) y la [desinstalación](docs/UNINSTALL.md).
 
-## Estado de la beta
+## Estado de la compilación
 
 - El creador probó manualmente la versión anterior 2.7.4 con ChatGPT, Spotify Web y de escritorio, YouTube, Plex Web y Plex para Windows (Ducking). Esto no significa que la beta actual se haya verificado en otros equipos.
-- Las comprobaciones de esta beta y el trabajo pendiente están en [preparación de la Release](docs/release-readiness.md).
+- La compilación local 2.8.9 no se ha publicado; consulta `out/validation-report.md` para ver la compilación y sus pruebas.
 - Para reportar un fallo, indica navegador, versión de Windows cuando corresponda, reproductor y pasos para reproducirlo. No incluyas códigos de emparejamiento, tokens, rutas personales ni logs sin revisar.
-
-El código experimental del controlador de Discord permanece aislado de la interfaz de producto y de las órdenes normales al agente. No lo uses en una llamada real hasta validar la ventana minimizada y la recuperación en una llamada controlada y autorizada. No se usa SendInput para el audio de Discord.
 
 ## Privacidad, desinstalación y apoyo
 

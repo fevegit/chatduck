@@ -385,7 +385,7 @@ test("settings expose universal overrides, compact agent state, and one fixed Ko
   assert.match(markup, /https:\/\/ko-fi\.com\/fevee/);
   assert.match(markup, /data-action="exclude-current"/);
   assert.match(markup, /data-action="add-website-override"/);
-  assert.doesNotMatch(markup, /data-discord-(?:enabled|mode)|discord-check/);
+  assert.doesNotMatch(markup, /data-setting="(?:discord|discordMute|discordDeafen)/);
   assert.match(markup, /data-nav="diagnostics"/);
   assert.equal((markup.match(/https:\/\/ko-fi\.com\/fevee/g) || []).length, 1);
   assert.match(markup, /target="_blank" rel="noopener noreferrer"/);
@@ -440,48 +440,6 @@ test("changing target source preserves the stored custom percentage for later us
   assert.equal(core.resolvePlayerRule(settings, "youtube").targetVolumePercent, 10);
   await dispatch("custom");
   assert.equal(core.resolvePlayerRule(settings, "youtube").targetVolumePercent, 27);
-});
-
-test("Discord microphone mute is an independent Windows preference", async () => {
-  const previousTheme = globalThis.AudioDuckNativeTheme;
-  globalThis.AudioDuckNativeTheme = fs.readFileSync(path.join(__dirname, "../src/native-preferences.css"), "utf8");
-  let settings = core.normalizeSettings();
-  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => settings, saveSettings: async (next) => { settings = core.normalizeSettings(next); }, getState: async () => ({ agent: { ok: true } }) });
-  page.shadow = new ShadowHarness();
-  page.opened = true;
-  page.activePage = "desktop";
-  try {
-    await page.render();
-    assert.match(page.shadow.html, /data-setting="discordMuteDuringDictation"/);
-    assert.match(page.shadow.html, /data-setting="discordDeafenDuringDictation"/);
-    assert.match(page.shadow.html, /value="automatic" data-setting="discordActivationMode"[^>]*checked/);
-    assert.match(page.shadow.html, /value="ctrl-click" data-setting="discordActivationMode"/);
-    assert.match(page.shadow.html, /Automatic on every dictation/);
-    assert.match(page.shadow.html, /Only on Ctrl \+ click/);
-    const ctrlMode = { type: "radio", value: "ctrl-click", disabled: false, dataset: { setting: "discordActivationMode" } };
-    await page.change({ stopPropagation() {}, target: { closest: (selector) => selector === "[data-setting]" ? ctrlMode : null } });
-    assert.equal(settings.discordActivationMode, "ctrl-click");
-    const automaticMode = { ...ctrlMode, value: "automatic" };
-    await page.change({ stopPropagation() {}, target: { closest: (selector) => selector === "[data-setting]" ? automaticMode : null } });
-    assert.equal(settings.discordActivationMode, "automatic");
-    assert.match(page.shadow.html, /Mute Discord microphone while dictating/);
-    assert.match(page.shadow.html, /Deafen Discord while dictating/);
-    assert.doesNotMatch(page.shadow.html, /data-setting="discordMuteDuringDictation"[^>]*checked/);
-    assert.doesNotMatch(page.shadow.html, /data-setting="discordDeafenDuringDictation"[^>]*checked/);
-    settings.discordMuteDuringDictation = true;
-    await page.render();
-    assert.match(page.shadow.html, /Update the Windows agent to enable Discord controls/);
-    settings.discordMuteDuringDictation = false;
-    settings.language = "es";
-    await page.render();
-    assert.match(page.shadow.html, /Silenciar el micrófono de Discord durante el dictado/);
-    assert.match(page.shadow.html, /Ensordecer Discord durante el dictado/);
-    assert.match(page.shadow.html, /Automática en cada dictado/);
-    assert.match(page.shadow.html, /Solo al pulsar Ctrl \+ clic/);
-  } finally {
-    if (previousTheme === undefined) delete globalThis.AudioDuckNativeTheme;
-    else globalThis.AudioDuckNativeTheme = previousTheme;
-  }
 });
 
 test("media diagnostics are gathered only on request and retain detailed control state without URLs", async () => {

@@ -15,12 +15,12 @@ test("consolidated framework-dependent release has one coherent version and stab
   assert.match(build, /UpgradeCode=\{3D7AE35B-6377-42AB-A8F4-FA26D7DC7F8A\}/);
   assert.match(build, /ChatDuck-Windows-Agent-\$Version-x64\.msi/);
   assert.match(build, /ChatGPT-Audio-Ducking\.user\.js/);
-  assert.match(project, /<Version>2\.8\.8-rc\.1<\/Version>/);
+  assert.match(project, /<Version>2\.8\.9<\/Version>/);
   assert.match(project, /<InformationalVersion>\$\(Version\)<\/InformationalVersion>/);
   assert.match(project, /<IncludeSourceRevisionInInformationalVersion>false<\/IncludeSourceRevisionInInformationalVersion>/);
   assert.match(project, /<AssemblyMetadata Include="SourceRevisionId" Value="\$\(SourceRevisionId\)"/);
-  assert.match(project, /<AssemblyVersion>2\.8\.8\.0<\/AssemblyVersion>/);
-  assert.match(project, /<FileVersion>2\.8\.8\.0<\/FileVersion>/);
+  assert.match(project, /<AssemblyVersion>2\.8\.9\.0<\/AssemblyVersion>/);
+  assert.match(project, /<FileVersion>2\.8\.9\.0<\/FileVersion>/);
   assert.match(wix, /Version="\$\(var\.ProductVersion\)"/);
   assert.match(wix, /UpgradeCode="\$\(var\.UpgradeCode\)"/);
   assert.match(wix, /Scope="perUser"/);

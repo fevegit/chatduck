@@ -81,23 +81,21 @@ test("observes dictation start and stop without touching media or permission API
   f.detector.dispose();
 });
 
-test("Ctrl+click is captured at mic start and stays tied to that dictation only", async () => {
+test("mic detection works the same with Ctrl+click and a normal click", async () => {
   const f = fixture(["Dictate"]);
   f.detector.start();
   f.emitClick("Dictate", true);
   f.setButtons(["Stop dictation"]);
   assert.equal(f.events.started.length, 1);
-  assert.equal(f.events.started[0].discordCtrlClick, true);
   f.setButtons(["Dictate"]);
   await new Promise((resolve) => setTimeout(resolve, STOP_CONFIRMATION_MS + 30));
   f.emitClick("Dictate", false);
   f.setButtons(["Stop dictation"]);
   assert.equal(f.events.started.length, 2);
-  assert.equal(f.events.started[1].discordCtrlClick, false);
   f.detector.dispose();
 });
 
-test("keeps the first pending click modifier and ignores keyboard and non-mic clicks", () => {
+test("ignores keyboard and non-microphone clicks", () => {
   const f = fixture(["Dictate"]);
   f.detector.start();
   f.emitClick("Dictate", false);
@@ -106,7 +104,6 @@ test("keeps the first pending click modifier and ignores keyboard and non-mic cl
   f.emitClick("Dictate", true, 0);
   f.setButtons(["Stop dictation"]);
   assert.equal(f.events.started.length, 1);
-  assert.equal(f.events.started[0].discordCtrlClick, false);
   f.detector.dispose();
 });
 

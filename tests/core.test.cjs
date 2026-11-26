@@ -8,15 +8,6 @@ test("defaults to universal web media and safe Windows selection", () => {
   assert.equal(settings.webIntegration, true);
   assert.equal(settings.universalWebControl, true);
   assert.equal(settings.webAudioMuteFallback, false);
-  assert.equal(settings.discordMuteDuringDictation, false);
-  assert.equal(settings.discordDeafenDuringDictation, false);
-  assert.equal(settings.discordActivationMode, "automatic");
-  assert.equal(core.normalizeSettings({ discordActivationMode: "ctrl-click" }).discordActivationMode, "ctrl-click");
-  assert.equal(core.normalizeSettings({ discordActivationMode: "invalid" }).discordActivationMode, "automatic");
-  assert.equal(core.normalizeSettings({ discordMuteDuringDictation: true }).discordMuteDuringDictation, true);
-  assert.equal(core.normalizeSettings({ discordMuteDuringDictation: "true" }).discordMuteDuringDictation, false);
-  assert.equal(core.normalizeSettings({ discordDeafenDuringDictation: true }).discordDeafenDuringDictation, true);
-  assert.equal(core.normalizeSettings({ discordDeafenDuringDictation: "true" }).discordDeafenDuringDictation, false);
   assert.equal(settings.fallbackToPause, false);
   assert.equal(settings.fallbackDucking, false);
   assert.deepEqual(settings.plexOrigins, []);
@@ -33,6 +24,22 @@ test("defaults to universal web media and safe Windows selection", () => {
   }
   assert.equal(core.shouldManageWeb("https://unknown-player.example/", settings), true);
   assert.equal(core.shouldManageWeb("https://discord.com/channels/1/2", settings), false);
+});
+
+test("legacy removed settings are ignored without resetting user audio preferences", () => {
+  const settings = core.normalizeSettings({
+    mode: "duck", targetVolumePercent: 23, excludedDomains: "example.org",
+    windowsApps: [{ path: "C:\\Apps\\Player.exe", enabled: true }],
+    discord: { enabled: true }, discordActivationMode: "ctrl-click",
+    discordMuteDuringDictation: true, discordDeafenDuringDictation: true
+  });
+  assert.equal(settings.targetVolumePercent, 23);
+  assert.equal(settings.excludedDomains, "example.org");
+  assert.equal(settings.windowsApps[0].path, "C:\\Apps\\Player.exe");
+  assert.equal(Object.hasOwn(settings, "discordMuteDuringDictation"), false);
+  assert.equal(Object.hasOwn(settings, "discordDeafenDuringDictation"), false);
+  assert.equal(Object.hasOwn(settings, "discordActivationMode"), false);
+  assert.equal(Object.hasOwn(settings, "discord"), false);
 });
 
 test("new installs default to Ducking while an existing explicit Pause preference is preserved", () => {
