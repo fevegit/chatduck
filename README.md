@@ -1,8 +1,8 @@
 # ChatDuck
 
-**Automatically pause or lower your music while you use ChatGPT voice input.**
+**Control web playback while you dictate to ChatGPT.**
 
-> **Experimental beta — v2.7.6-beta.1.** This release is not stable. Windows MSI installation and upgrades have not been verified on a clean test machine, and compatibility on other computers is still being tested. The MSI is unsigned.
+> **Experimental branch — v2.8.4-alpha.1.** Not released. The userscript permission scope and universal media engine have changed. An off-by-default Windows option can mute Discord's microphone during dictation; minimized-window behavior still needs isolated validation.
 
 [**Install ChatDuck (userscript)**](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) · [Español](README.es.md) · [Report a bug](https://github.com/fevegit/chatduck/issues)
 
@@ -11,7 +11,7 @@
 1. Install [Tampermonkey](https://www.tampermonkey.net/) for Firefox, Chrome or Edge (skip this if you already have it).
 2. [Install ChatDuck](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) and approve it in Tampermonkey.
 
-Browser Mode is ready without a Windows app, token, microphone permission, or pairing. Open [ChatGPT](https://chatgpt.com/) and a supported web player in the **same browser**. ChatDuck can pause playback or lower its volume while dictating, then restore it when dictation ends.
+Browser Mode works without a Windows app, token, microphone permission, or pairing. A clean installation defaults to Ducking, and Universal Web Control manages compatible HTML5 audio and video on HTTP and HTTPS pages in the same browser. Existing saved modes remain unchanged. It excludes ChatGPT and communication sites by default. Pause or Ducking and volume are global, with per-site overrides and domain exclusions.
 
 Open settings from **Tampermonkey → ChatGPT Audio Ducking → Open ChatDuck settings**. The legacy userscript name and namespace are intentionally retained so existing installs can update in place instead of creating a duplicate. Your saved preferences are stored by Tampermonkey.
 
@@ -19,16 +19,17 @@ Open settings from **Tampermonkey → ChatGPT Audio Ducking → Open ChatDuck se
 
 ## Browser Mode
 
-The userscript controls supported browser players directly. No Windows agent is needed for:
+The userscript controls standard HTML5 media directly. No Windows agent is needed for:
 
 | Player | Browser Mode |
 | --- | --- |
-| YouTube / YouTube Music | Supported |
-| Spotify Web | Supported |
-| Twitch | Supported |
-| Plex Web | Supported; some self-hosted server addresses need additional permission setup |
+| Known or unknown websites | Controlled when media exposes a writable HTMLMediaElement and the domain is not excluded |
+| Same-origin and cross-origin frames | Each frame runs its own isolated controller |
+| Open Shadow DOM | Scanned at startup and when its host is added |
 
-Pause or Ducking and the target volume can be configured per player. The web player must be open in the same browser where ChatDuck is installed.
+Closed shadow roots and custom players that do not expose controllable HTML media remain unsupported. An opt-in Tampermonkey tab-mute fallback can handle a Web Audio-only page, but it mutes the whole tab instead of ducking and remains unverified in LibreWolf. No Web Audio interception or page API patching is used. Real streaming playback still needs manual verification.
+
+Known external issue: [Brave/Chromium and ChromeWideEchoCancellation](docs/known-issues/chromium-wide-echo-cancellation.md). ChatDuck does not change this browser feature automatically.
 
 ## Optional Windows Agent
 
@@ -50,7 +51,7 @@ See [agent security](docs/SECURITY.md), [permissions](docs/PERMISSIONS.md), and 
 - Current beta checks and outstanding work are listed in [release readiness](docs/release-readiness.md).
 - Report reproducible issues with your browser, Windows version where relevant, player, and steps. Do not include pairing codes, tokens, personal paths, or unreviewed logs.
 
-See [v2.7.6-beta.1 release and downloads](https://github.com/fevegit/chatduck/releases/tag/v2.7.6-beta.1).
+Discord controller code remains experimental and isolated from the generated product UI and normal agent commands. Do not use it on a live call until minimized-window behavior and recovery have been validated in an authorized controlled call. SendInput is not used for Discord audio.
 
 ## Privacy, uninstall, and support
 

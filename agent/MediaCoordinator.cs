@@ -14,6 +14,7 @@ internal sealed class MediaCoordinator
     private static readonly TimeSpan HeartbeatTimeout = TimeSpan.FromMinutes(2.5);
     private const int MinimumPauseWasapiFadeMs = 500;
     private const int MinimumDuckingWasapiFadeMs = 250;
+    private const int WasapiFadeUpdateIntervalMs = 8;
     private const int PauseSilenceHoldMs = 50;
     private const float ZeroVolumeTolerance = 0.001f;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -21,15 +22,18 @@ internal sealed class MediaCoordinator
     private readonly object _pendingFileSync = new();
     private readonly string _statePath;
     private readonly Action<string> _log;
+    private readonly DiscordVoiceController _discord;
     private readonly List<string> _errors = [];
     private ActiveControlSession? _active;
     private long _lastHeartbeatUtcTicks;
     private long _pendingRevision;
+    private bool _lastRestoreDurable = true;
 
     public MediaCoordinator(string appDirectory, Action<string> log)
     {
         _statePath = Path.Combine(appDirectory, "pending.json");
         _log = log;
+        _discord = new DiscordVoiceController(new WindowsDiscordVoiceAccess(log), Path.Combine(appDirectory, "discord-pending.json"), log);
         _ = MonitorAsync();
     }
 
@@ -58,18 +62,52 @@ internal sealed class MediaCoordinator
             _active = active;
             Interlocked.Exchange(ref _lastHeartbeatUtcTicks, DateTime.UtcNow.Ticks);
 
+            Task<DiscordBeginResult>? discordTask = null;
+            if (settings.DiscordMuteDuringDictation || settings.DiscordDeafenDuringDictation)
+            {
+                _log($"Discord begin dispatch session={sessionId} before=media-ducking");
+                var dispatchAt = Stopwatch.GetTimestamp();
+                active.DiscordDispatchAt = dispatchAt;
+                discordTask = Task.Run(async () =>
+                {
+                    using var process = Process.GetCurrentProcess();
+                    process.Refresh();
+                    var cpuBefore = process.TotalProcessorTime;
+                    var result = await _discord.BeginAsync(sessionId, settings.DiscordMuteDuringDictation, settings.DiscordDeafenDuringDictation);
+                    var completedAt = Stopwatch.GetTimestamp();
+                    process.Refresh();
+                    active.DiscordBeginCompletedAt = completedAt;
+                    active.DiscordBeginTaskMs = Stopwatch.GetElapsedTime(dispatchAt, completedAt).TotalMilliseconds;
+                    _log($"Discord begin task session={sessionId} outcome={result.Message} dispatchFromRequestMs={Stopwatch.GetElapsedTime(active.RequestReceivedAt, dispatchAt).TotalMilliseconds:F1} elapsedMs={active.DiscordBeginTaskMs:F1}");
+                    _log($"Discord agent resource sample session={sessionId} cpuDeltaMs={(process.TotalProcessorTime - cpuBefore).TotalMilliseconds:F1} workingSetBytes={process.WorkingSet64} threads={process.Threads.Count}; process-wide during activation, not idle baseline");
+                    return result;
+                });
+            }
             var pausedAppKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var duckTask = DuckFallbackSessions(active, pausedAppKeys);
-            await FadeSelectedVolumeSessionsAsync(active);
-            var notReadyForPause = await HoldSilenceBeforePauseAsync(active);
-            await PauseMediaSessionsAsync(active, pausedAppKeys, notReadyVolumeApps: notReadyForPause);
-            await CompletePauseFallbacksAsync(active, pausedAppKeys);
-            var failedDuckingApps = await duckTask;
-            if (settings.FallbackToPause && failedDuckingApps.Count > 0)
-                await PauseMediaSessionsAsync(active, pausedAppKeys, failedDuckingApps, fallbackUsed: true);
-            active.UnsupportedCount = failedDuckingApps.Count(failed => !active.Media.Any(item => item.FallbackUsed && MediaIdentityKeys(item.AppId, settings).Contains(failed)));
-            SavePendingLocked();
-            return StatusLocked(Stopwatch.GetElapsedTime(started).TotalMilliseconds, sessionId, BuildBeginTiming(active));
+            try
+            {
+                var duckTask = DuckFallbackSessions(active, pausedAppKeys);
+                await FadeSelectedVolumeSessionsAsync(active);
+                var notReadyForPause = await HoldSilenceBeforePauseAsync(active);
+                await PauseMediaSessionsAsync(active, pausedAppKeys, notReadyVolumeApps: notReadyForPause);
+                await CompletePauseFallbacksAsync(active, pausedAppKeys);
+                var failedDuckingApps = await duckTask;
+                if (settings.FallbackToPause && failedDuckingApps.Count > 0)
+                    await PauseMediaSessionsAsync(active, pausedAppKeys, failedDuckingApps, fallbackUsed: true);
+                if (discordTask is not null)
+                {
+                    var discord = await discordTask;
+                    if (!discord.Ok) RecordError($"Control de Discord: {discord.Message}");
+                }
+                active.UnsupportedCount = failedDuckingApps.Count(failed => !active.Media.Any(item => item.FallbackUsed && MediaIdentityKeys(item.AppId, settings).Contains(failed)));
+                SavePendingLocked();
+                return StatusLocked(Stopwatch.GetElapsedTime(started).TotalMilliseconds, sessionId, BuildBeginTiming(active));
+            }
+            catch
+            {
+                if (discordTask is not null) try { await discordTask; } catch { }
+                throw;
+            }
         }
         finally { _gate.Release(); }
     }
@@ -84,12 +122,17 @@ internal sealed class MediaCoordinator
     public async Task<object> RestoreAsync(string sessionId, string reason)
     {
         var started = Stopwatch.GetTimestamp();
+        _log($"command restore received session={sessionId} reason={reason}");
         await _gate.WaitAsync();
         try
         {
             if (_active is not null && _active.SessionId != sessionId)
+            {
+                _log($"command restore ignored session={sessionId} activeSession={_active.SessionId}");
                 return new { ok = true, ignored = true, restored = 0, sessionId, durationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds };
+            }
             var restored = _active is null ? await RestorePendingLocked(sessionId) : await RestoreLocked(reason);
+            _log($"command restore completed session={sessionId} ignored=false restored={restored} durationMs={Stopwatch.GetElapsedTime(started).TotalMilliseconds:F1}");
             return new { ok = true, ignored = false, restored, sessionId, durationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds };
         }
         finally { _gate.Release(); }
@@ -97,11 +140,24 @@ internal sealed class MediaCoordinator
 
     public async Task<object> RestoreAllAsync(string reason)
     {
+        _log($"command restore-all received reason={reason}");
         await _gate.WaitAsync();
         try
         {
             var count = _active is null ? await RestorePendingLocked(null) : await RestoreLocked(reason);
+            _log($"command restore-all completed restored={count}");
             return new { ok = true, restored = count };
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<AgentShutdownResult> PrepareShutdownAsync()
+    {
+        await _gate.WaitAsync();
+        try
+        {
+            var restored = _active is null ? await RestorePendingLocked(null) : await RestoreLocked("agent-shutdown");
+            return new AgentShutdownResult(_lastRestoreDurable, restored, File.Exists(_statePath));
         }
         finally { _gate.Release(); }
     }
@@ -221,7 +277,7 @@ internal sealed class MediaCoordinator
     public async Task RestorePendingAtStartupAsync()
     {
         await _gate.WaitAsync();
-        try { await RestorePendingLocked(null); }
+        try { await RestorePendingLocked(null); await _discord.RestorePendingAtStartupAsync(); }
         finally { _gate.Release(); }
     }
 
@@ -283,6 +339,9 @@ internal sealed class MediaCoordinator
             firstVolumeAfter = active.FirstVolumeAfter,
             fadeOutDurationMs = active.FadeOutDurationMs,
             fadeOutCompleteFromRequestMs = SinceRequest(active.FadeOutCompletedAt),
+            discordDispatchFromRequestMs = SinceRequest(active.DiscordDispatchAt),
+            discordCompleteFromRequestMs = SinceRequest(active.DiscordBeginCompletedAt),
+            discordTaskMs = active.DiscordBeginTaskMs,
             fadeOutTargetVolume = active.FadeOutTargetVolume,
             fadeOutWriteCount = active.FadeOutWriteCount,
             maxFadeOutStep = active.MaxFadeOutStep
@@ -676,12 +735,13 @@ internal sealed class MediaCoordinator
     {
         var active = _active;
         if (active is null) return 0;
+        await _discord.RestoreActiveAsync();
         var mediaJobs = active.Media.Select(async item =>
         {
             try
             {
                 item.Session.PlaybackInfoChanged -= item.OnPlaybackInfoChanged;
-                if (!item.PauseOwned || item.ManualOverride) return 0;
+                if (!item.PauseOwned || item.ManualOverride) return (Restored: false, NeedsRecovery: false);
                 GlobalSystemMediaTransportControlsSession? session = item.Session;
                 var playbackState = session.GetPlaybackInfo()?.PlaybackStatus;
                 if (playbackState != GlobalSystemMediaTransportControlsSessionPlaybackStatus.Paused)
@@ -691,22 +751,23 @@ internal sealed class MediaCoordinator
                         string.Equals(candidate.SourceAppUserModelId, item.AppId, StringComparison.OrdinalIgnoreCase));
                     playbackState = session?.GetPlaybackInfo()?.PlaybackStatus;
                 }
-                if (playbackState == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing) return 1;
+                if (playbackState == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing) return (Restored: true, NeedsRecovery: false);
                 if (playbackState != GlobalSystemMediaTransportControlsSessionPlaybackStatus.Paused)
                 {
                     _log($"no se reanudó {item.AppId}: estado={playbackState?.ToString() ?? "desconocido"}; manual={item.ManualOverride}");
-                    return 0;
+                    return (Restored: false, NeedsRecovery: !item.ManualOverride);
                 }
                 if (session is not null && await session.TryPlayAsync() &&
-                    await WaitForPlaybackStateAsync(item.AppId, GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing, TimeSpan.FromSeconds(2))) return 1;
+                    await WaitForPlaybackStateAsync(item.AppId, GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing, TimeSpan.FromSeconds(2))) return (Restored: true, NeedsRecovery: false);
                 _log($"Windows no confirmó Playing para {item.AppId}; el volumen se mantiene en silencio.");
-                return 0;
+                return (Restored: false, NeedsRecovery: !item.ManualOverride);
             }
-            catch (Exception error) { RecordError($"Restaurar {item.AppId}: {error.GetType().Name}"); return 0; }
+            catch (Exception error) { RecordError($"Restaurar {item.AppId}: {error.GetType().Name}"); return (Restored: false, NeedsRecovery: item.PauseOwned && !item.ManualOverride); }
         }).ToArray();
-        var restoredMedia = (await Task.WhenAll(mediaJobs)).Sum();
+        var mediaResults = await Task.WhenAll(mediaJobs);
+        var restoredMedia = mediaResults.Count(result => result.Restored);
         var restored = restoredMedia;
-        var keepPending = false;
+        var keepPending = mediaResults.Any(result => result.NeedsRecovery);
         foreach (var item in VolumeSnapshot(active))
         {
             try
@@ -726,14 +787,14 @@ internal sealed class MediaCoordinator
                         immediate: immediateVolumeRestore, restoring: true, diagnostics: active)) restored++;
                 }
             }
-            catch (Exception error) { RecordError($"Restaurar {item.ProcessName}: {error.GetType().Name}"); }
+            catch (Exception error) { keepPending = true; RecordError($"Restaurar {item.ProcessName}: {error.GetType().Name}"); }
             finally { item.Dispose(); }
         }
-        if (keepPending) SavePendingLocked();
+        if (keepPending) _lastRestoreDurable = SavePendingLocked();
         active.Media.Clear();
         ClearVolumes(active);
         _active = null;
-        if (!keepPending) DeletePending();
+        if (!keepPending) { DeletePending(); _lastRestoreDurable = !File.Exists(_statePath); }
         else _log("la recuperación de volumen permanece pendiente hasta reanudar Spotify.");
         _log($"sesión restaurada ({reason}); cambios recuperados: {restored}");
         return restored;
@@ -741,15 +802,18 @@ internal sealed class MediaCoordinator
 
     private async Task<int> RestorePendingLocked(string? sessionId)
     {
+        var restored = 0;
         var pending = LoadPending();
-        if (pending is null || (sessionId is not null && pending.SessionId != sessionId)) return 0;
+        if (pending is null) { _lastRestoreDurable = !File.Exists(_statePath); return restored; }
+        if (sessionId is not null && pending.SessionId != sessionId) { _lastRestoreDurable = true; return restored; }
         if (DateTimeOffset.UtcNow - pending.SavedAt > RecoveryWindow)
         {
             DeletePending();
-            return 0;
+            _lastRestoreDurable = !File.Exists(_statePath);
+            return restored;
         }
 
-        var restored = 0;
+        var audioRestored = 0;
         var keepPending = false;
         try
         {
@@ -761,7 +825,7 @@ internal sealed class MediaCoordinator
                 if (match is not null)
                 {
                     var started = await match.TryPlayAsync();
-                    if (started && await WaitForPlaybackStateAsync(entry.AppId, GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing, TimeSpan.FromSeconds(2))) restored++;
+                    if (started && await WaitForPlaybackStateAsync(entry.AppId, GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing, TimeSpan.FromSeconds(2))) audioRestored++;
                     else keepPending = true;
                 }
                 else keepPending = true;
@@ -786,17 +850,18 @@ internal sealed class MediaCoordinator
                         continue;
                     }
                     candidate.Volume.Volume = entry.OriginalVolume;
-                    restored++;
+                    audioRestored++;
                 }
             }
             catch (Exception error) { RecordError($"Recuperación WASAPI: {error.GetType().Name}"); }
             finally { candidate.Dispose(); }
         }
-        if (!keepPending) DeletePending();
+        if (!keepPending) { DeletePending(); _lastRestoreDurable = !File.Exists(_statePath); }
+        else _lastRestoreDurable = WritePendingState(pending);
         _log(keepPending
-            ? $"recuperación del estado pendiente; cambios recuperados: {restored}; la restauración de volumen sigue aplazada hasta Playing."
-            : $"recuperación del estado pendiente; cambios recuperados: {restored}");
-        return restored;
+            ? $"recuperación del estado pendiente; cambios recuperados: {audioRestored}; la restauración de volumen sigue aplazada hasta Playing."
+            : $"recuperación del estado pendiente; cambios recuperados: {audioRestored}");
+        return restored + audioRestored;
     }
 
     private async Task<bool> FadeVolumeAsync(TrackedVolumeSession item, float target, int durationMs, bool immediate,
@@ -856,9 +921,9 @@ internal sealed class MediaCoordinator
             }
             var elapsedMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
             var progress = Math.Clamp(elapsedMs / durationMs, 0d, 1d);
-            // WASAPI volume writes block for tens of milliseconds on some session
-            // providers. Even amplitude steps keep sparse updates smaller than an
-            // S-curve, whose middle steps become disproportionately large.
+            // Pace WASAPI writes so providers cannot turn the fade into an
+            // unbounded burst of volume changes. Elapsed-time interpolation keeps
+            // the requested duration stable when a provider write itself blocks.
             var value = (float)(start + (target - start) * progress);
             if (progress >= 1d) value = target;
             var step = Math.Abs(value - lastWritten);
@@ -884,7 +949,7 @@ internal sealed class MediaCoordinator
                 QueueSavePendingLocked();
             }
             if (progress >= 1d) break;
-            await Task.Yield();
+            await Task.Delay(WasapiFadeUpdateIntervalMs);
         }
         var actual = item.Volume.Volume;
         if (!float.IsFinite(actual)) throw new InvalidOperationException("El volumen WASAPI no es finito.");
@@ -960,7 +1025,12 @@ internal sealed class MediaCoordinator
         while (true)
         {
             await Task.Delay(500);
-            if (_active is null) continue;
+            await _discord.ObserveAsync();
+            if (_active is null)
+            {
+                await _discord.RestoreActiveAsync();
+                continue;
+            }
             if (!await _gate.WaitAsync(0)) continue;
             try
             {
@@ -998,15 +1068,16 @@ internal sealed class MediaCoordinator
         }
     }
 
-    private void SavePendingLocked()
+    private bool SavePendingLocked()
     {
         var active = _active;
-        if (active is null || (active.Media.Count == 0 && VolumeSnapshot(active).Length == 0)) { DeletePending(); return; }
+        if (active is null || (active.Media.Count == 0 && VolumeSnapshot(active).Length == 0)) { DeletePending(); return !File.Exists(_statePath); }
         var state = CreatePendingState(active);
         var revision = Interlocked.Increment(ref _pendingRevision);
         lock (_pendingFileSync)
         {
-            if (revision == Interlocked.Read(ref _pendingRevision)) WritePendingState(state);
+            if (revision == Interlocked.Read(ref _pendingRevision)) return WritePendingState(state);
+            return File.Exists(_statePath);
         }
     }
 
@@ -1031,15 +1102,16 @@ internal sealed class MediaCoordinator
         active.Media.Select(item => new PendingMedia(item.AppId, item.PauseOwned, item.ManualOverride)).ToArray(),
         VolumeSnapshot(active).Select(item => new PendingVolume(item.SessionKey, item.ProcessName, item.OriginalVolume, item.AppliedVolume, item.ManualOverride) { ExecutablePath = item.ExecutablePath }).ToArray());
 
-    private void WritePendingState(PendingState state)
+    private bool WritePendingState(PendingState state)
     {
         try
         {
             var temp = _statePath + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(state));
             File.Move(temp, _statePath, overwrite: true);
+            return true;
         }
-        catch (Exception error) { RecordError($"No se pudo guardar la recuperación local: {error.GetType().Name}"); }
+        catch (Exception error) { RecordError($"No se pudo guardar la recuperación local: {error.GetType().Name}"); return false; }
     }
 
     private void QueueSavePending() => _ = SavePendingAsync();
@@ -1102,6 +1174,9 @@ internal sealed class MediaCoordinator
         public float? FirstVolumeAfter { get; set; }
         public float FadeOutTargetVolume { get; set; }
         public double FadeOutDurationMs { get; set; }
+        public double? DiscordBeginTaskMs { get; set; }
+        public long? DiscordDispatchAt { get; set; }
+        public long? DiscordBeginCompletedAt { get; set; }
         public long? FadeOutCompletedAt { get; set; }
         public int FadeOutWriteCount { get; set; }
         public double MaxFadeOutStep { get; set; }

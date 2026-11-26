@@ -1,21 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="ChatDuck Windows Agent"
            Manufacturer="ChatDuck contributors"
-           Version="$(var.Version)"
-           UpgradeCode="{75A2EB87-3A7D-4A1C-A128-6BD4A88DB93F}"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="$(var.UpgradeCode)"
            Scope="perUser"
            InstallerVersion="500"
            Compressed="yes">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of ChatDuck Windows Agent is already installed." />
+    <MajorUpgrade Schedule="afterInstallExecute" DowngradeErrorMessage="A newer version of ChatDuck Windows Agent is already installed." />
     <MediaTemplate EmbedCab="yes" />
-    <WixVariable Id="WixUILicenseRtf" Value="$(var.ProjectDir)\docs\INSTALLER-NOTICE.rtf" />
-    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <Icon Id="ChatDuckAppIcon" SourceFile="$(var.ProjectDir)\agent\assets\chatduck.ico" />
+    <Binary Id="AgentRollbackHelper" SourceFile="$(var.PublishDir)\ChatGPTAudioDuckingAgent.exe" />
+    <Property Id="ARPPRODUCTICON" Value="ChatDuckAppIcon" />
+
+    <Property Id="PREVIOUS_AGENT_EXE">
+      <DirectorySearch Id="PreviousAgentInstallSearch" Path="[LocalAppDataFolder]Programs\ChatGPTAudioDuckingTM" Depth="0">
+        <FileSearch Name="ChatGPTAudioDuckingAgent.exe" />
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="DOTNET_DESKTOP_USER">
+      <DirectorySearch Id="DotNetDesktopUserSearch" Path="[LocalAppDataFolder]Microsoft\dotnet\shared\Microsoft.WindowsDesktop.App" Depth="1">
+        <FileSearch Name="PresentationFramework.dll" MinVersion="10.0.0.0" />
+      </DirectorySearch>
+    </Property>
+    <Property Id="DOTNET_DESKTOP_USER_PROGRAMS">
+      <DirectorySearch Id="DotNetDesktopUserProgramsSearch" Path="[LocalAppDataFolder]Programs\dotnet\shared\Microsoft.WindowsDesktop.App" Depth="1">
+        <FileSearch Name="PresentationFramework.dll" MinVersion="10.0.0.0" />
+      </DirectorySearch>
+    </Property>
+    <Property Id="DOTNET_DESKTOP_MACHINE">
+      <DirectorySearch Id="DotNetDesktopMachineSearch" Path="[ProgramFiles64Folder]dotnet\shared\Microsoft.WindowsDesktop.App" Depth="1">
+        <FileSearch Name="PresentationFramework.dll" MinVersion="10.0.0.0" />
+      </DirectorySearch>
+    </Property>
+    <Launch Condition="DOTNET_DESKTOP_USER OR DOTNET_DESKTOP_USER_PROGRAMS OR DOTNET_DESKTOP_MACHINE"
+            Message="ChatDuck requires the Microsoft .NET 10 Desktop Runtime x64. Install it from https://dotnet.microsoft.com/download/dotnet/10.0, then run this installer again. The installer does not download prerequisites." />
 
     <Feature Id="AgentFeature" Title="ChatDuck Windows Agent" Level="1">
       <ComponentGroupRef Id="AgentFiles" />
-      <ComponentRef Id="StartMenuShortcuts" />
+      <ComponentRef Id="ProgramsFolderCleanup" />
+      <ComponentRef Id="AgentShortcuts" />
     </Feature>
 
     <StandardDirectory Id="LocalAppDataFolder">
@@ -27,30 +52,37 @@
       <Directory Id="AgentMenuFolder" Name="ChatDuck" />
     </StandardDirectory>
 
-    <ComponentGroup Id="AgentFiles" Directory="INSTALLFOLDER">
-      <Component Id="AgentExecutable" Guid="*">
-        <File Id="AgentExeFile" Source="$(var.PublishDir)\ChatGPTAudioDuckingAgent.exe" KeyPath="yes" />
-      </Component>
-      <Component Id="AgentSettingsPage" Guid="*">
-        <File Id="AgentSettingsFile" Source="$(var.ProjectDir)\settings.html" KeyPath="yes" />
-      </Component>
-      <Component Id="UserscriptTemplate" Guid="*">
-        <File Id="UserscriptTemplateFile" Source="$(var.ProjectDir)\ChatGPT-Audio-Ducking.user.js" Name="ChatGPT-Audio-Ducking.template.user.js" KeyPath="yes" />
-      </Component>
-      <Component Id="AgentLicense" Guid="*">
-        <File Id="AgentLicenseFile" Source="$(var.ProjectDir)\LICENSE" KeyPath="yes" />
-      </Component>
-    </ComponentGroup>
-
-    <Component Id="StartMenuShortcuts" Directory="AgentMenuFolder" Guid="*">
-      <Shortcut Id="PairBrowserShortcut" Name="ChatDuck Agent" Description="Start ChatDuck and pair this browser" Target="[INSTALLFOLDER]ChatGPTAudioDuckingAgent.exe" Arguments="--pair" WorkingDirectory="INSTALLFOLDER" />
+    <Component Id="AgentShortcuts" Directory="AgentMenuFolder" Guid="{BC0D7BE9-EC98-4D83-9D9D-08E7EF5D6AE5}">
+      <Shortcut Id="PairBrowserShortcut" Name="Pair browser with ChatDuck" Description="Start ChatDuck and pair this browser"
+                Target="[INSTALLFOLDER]ChatGPTAudioDuckingAgent.exe" Arguments="--pair"
+                WorkingDirectory="INSTALLFOLDER" Icon="ChatDuckAppIcon" IconIndex="0" />
       <RemoveFolder Id="RemoveAgentMenuFolder" On="uninstall" />
-      <RegistryValue Root="HKCU" Key="Software\AudioDucking\Agent" Name="StartMenuShortcut" Type="string" Value="1" KeyPath="yes" />
+      <RegistryValue Root="HKCU" Key="Software\ChatDuck\Agent\Installer" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+    <Component Id="ProgramsFolderCleanup" Directory="ProgramsFolder" Guid="{148A16A2-45A0-45DF-B379-22F5CB90B7A0}">
+      <RemoveFolder Id="RemoveProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\ChatDuck\Agent\Installer" Name="ProgramsFolder" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
-    <CustomAction Id="CleanAgentData" FileRef="AgentExeFile" ExeCommand="--uninstall" Execute="deferred" Impersonate="yes" Return="ignore" />
+    <CustomAction Id="StopPreviousAgent" Directory="SystemFolder"
+                  ExeCommand="cmd.exe /c if exist &quot;[INSTALLFOLDER]ChatGPTAudioDuckingAgent.exe&quot; (&quot;[INSTALLFOLDER]ChatGPTAudioDuckingAgent.exe&quot; --shutdown)"
+                  Execute="immediate" Return="check" />
+    <CustomAction Id="StopNewAgentOnRollback" FileRef="AgentExeFile" ExeCommand="--installer-stop-owned $(var.ProductVersionString)"
+                  Execute="rollback" Impersonate="yes" Return="check" />
+    <CustomAction Id="RestorePreviousAgentOnRollback" BinaryRef="AgentRollbackHelper"
+                  ExeCommand="--installer-restore &quot;[INSTALLFOLDER]ChatGPTAudioDuckingAgent.exe&quot;"
+                  Execute="rollback" Impersonate="yes" Return="check" />
+    <CustomAction Id="StartAndVerifyAgent" FileRef="AgentExeFile" ExeCommand="--installer-start $(var.ProductVersionString)"
+                  Execute="deferred" Impersonate="yes" Return="check" />
+    <CustomAction Id="StopAgentBeforeUninstall" FileRef="AgentExeFile" ExeCommand="--shutdown"
+                  Execute="immediate" Return="check" />
+
     <InstallExecuteSequence>
-      <Custom Action="CleanAgentData" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="RestorePreviousAgentOnRollback" Before="InstallFiles" Condition="NOT REMOVE~=&quot;ALL&quot; AND PREVIOUS_AGENT_EXE" />
+      <Custom Action="StopPreviousAgent" Before="InstallInitialize" Condition="NOT REMOVE~=&quot;ALL&quot;" />
+      <Custom Action="StopNewAgentOnRollback" Before="StartAndVerifyAgent" Condition="NOT REMOVE~=&quot;ALL&quot;" />
+      <Custom Action="StartAndVerifyAgent" Before="InstallFinalize" Condition="NOT REMOVE~=&quot;ALL&quot;" />
+      <Custom Action="StopAgentBeforeUninstall" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
   </Package>
 </Wix>

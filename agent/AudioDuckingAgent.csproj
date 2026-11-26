@@ -5,17 +5,23 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon>assets\chatduck.ico</ApplicationIcon>
     <AssemblyName>ChatGPTAudioDuckingAgent</AssemblyName>
     <AssemblyTitle>ChatDuck Windows Agent</AssemblyTitle>
     <Product>ChatDuck</Product>
     <Company>ChatDuck contributors</Company>
-    <Version>2.7.6-beta.1</Version>
-    <InformationalVersion>2.7.6-beta.1</InformationalVersion>
-    <AssemblyVersion>2.7.6.0</AssemblyVersion>
-    <FileVersion>2.7.6.0</FileVersion>
+    <Version>2.8.8-rc.1</Version>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <AssemblyVersion>2.8.8.0</AssemblyVersion>
+    <FileVersion>2.8.8.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
+    <AssemblyMetadata Include="SourceRevisionId" Value="$(SourceRevisionId)" Condition="'$(SourceRevisionId)' != ''" />
+    <Using Include="System.IO" />
+    <InternalsVisibleTo Include="ChatDuckAgent.RegressionTests" />
     <PackageReference Include="NAudio.Wasapi" Version="3.3.0" />
   </ItemGroup>
 </Project>

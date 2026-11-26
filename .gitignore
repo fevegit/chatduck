@@ -6,8 +6,13 @@
 **/publish/
 **/dist/
 **/backups/
-/release-artifacts/*
-!/release-artifacts/.gitkeep
+/out/*
+!/out/.gitkeep
+/release-artifacts/
+**/TestResults/
+**/.vs/
+**/.cache/
+*.cache
 /ChatDuck.user.js
 /.tools/
 /.wix/

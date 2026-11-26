@@ -19,7 +19,7 @@ test("English and Spanish catalogs have the same stable key set", () => {
 });
 
 test("translations preserve interpolation placeholders and flag unapproved English carryovers", () => {
-  const identicalCopyAllowlist = ["brand", "general", "sizeNormal", "duck", "youtube", "youtubeMusic", "spotifyWeb", "twitch", "plexWeb", "inherit", "pathPlaceholder", "plexOriginPlaceholder"];
+  const identicalCopyAllowlist = ["brand", "general", "webTab", "windowsTab", "sizeNormal", "duck", "youtube", "youtubeMusic", "spotifyWeb", "twitch", "plexWeb", "inherit", "pathPlaceholder", "plexOriginPlaceholder", "diagnosticNo", "diagnosticIframes", "error", "originalVolumeLabel"];
   const identical = [];
   for (const [key, english] of Object.entries(i18n.CATALOGS.en)) {
     const spanish = i18n.CATALOGS.es[key];

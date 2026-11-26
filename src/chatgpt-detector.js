@@ -4,7 +4,10 @@
   const VOICE_ACTIVE = /(?:mute\s+microphone|unmute\s+microphone|end\s+(?:voice|call)|exit\s+voice|leave\s+voice|silenciar\s+micr[oó]fono|finalizar\s+voz|salir\s+de\s+voz|voice\s+conversation\s+active|modo\s+de\s+voz\s+activo)/i;
   const RECORDING_ACTIVE = /(?:stop|pause|finish|cancel|send|end|submit|done)\s+(?:(?:audio|voice)\s+)?(?:record(?:ing)?|dictat(?:e|ion|ing)?|voice\s+input)|(?:record(?:ing)?|dictat(?:ion|ing)?|voice\s+input)\s+(?:is\s+)?(?:active|started|recording)|(?:detener|finalizar|cancelar|parar|enviar|terminar)\s+(?:la\s+)?(?:grabaci[oó]n|dictado|entrada\s+de\s+voz)|(?:grabaci[oó]n|dictado)\s+(?:activa|iniciada|grabando)/i;
   const DICTATION_CONTROL = /(?:dictat(?:e|ion|ing)?|dictar|dictado|microphone|\bmic\b|record(?:ing)?\s+audio|grabar\s+audio|grabar\s+mensaje|micr[oó]fono|voice\s+input|entrada\s+de\s+voz)/i;
-  const STOP_CONFIRMATION_MS = 32;
+  // React briefly replaces ChatGPT's recording controls while the recorder is
+  // still active. Require a stable inactive observation before restoring apps.
+  const STOP_CONFIRMATION_MS = 250;
+  const START_GESTURE_MAX_AGE_MS = 1500;
 
   class ChatGPTDetector {
     constructor({ doc, win, getSettings, onStart, onStop, onState, onError }) {
@@ -21,10 +24,13 @@
       this.observer = null;
       this.removers = [];
       this.suppressed = false;
+      this.pendingStartGesture = null;
+      this.startGestureTimer = 0;
     }
 
     start() {
       this.on(this.win, "pagehide", () => this.finish("chatgpt-tab-closed"), { once: true });
+      this.on(this.doc, "click", (event) => this.captureStartGesture(event), true);
       try {
         const Observer = this.win.MutationObserver;
         if (typeof Observer !== "function") throw new Error("MutationObserver no disponible");
@@ -66,6 +72,39 @@
     buttonLabel(button) {
       return [button.getAttribute("aria-label"), button.getAttribute("title"), button.getAttribute("data-testid"), button.textContent]
         .filter(Boolean).join(" ").replace(/\s+/g, " ").slice(0, 160);
+    }
+
+    captureStartGesture(event) {
+      if (!event || !(Number(event.detail) > 0)) return;
+      const origin = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
+      const button = origin?.closest?.("button,[role='button']");
+      if (!button) return;
+      const label = this.buttonLabel(button);
+      if (!DICTATION_CONTROL.test(label) || VOICE_ACTIVE.test(label) || this.isRecordingButton(button, label)) return;
+      if (this.pendingStartGesture && this.now() - this.pendingStartGesture.at <= START_GESTURE_MAX_AGE_MS) return;
+      this.clearStartGesture();
+      const gesture = { ctrlKey: event.ctrlKey === true, at: this.now() };
+      this.pendingStartGesture = gesture;
+      this.startGestureTimer = setTimeout(() => {
+        if (this.pendingStartGesture === gesture) this.pendingStartGesture = null;
+        this.startGestureTimer = 0;
+      }, START_GESTURE_MAX_AGE_MS);
+      setTimeout(() => this.safeEvaluate("native-mic-click"), 0);
+    }
+
+    now() { return this.win.performance?.now?.() ?? Date.now(); }
+
+    takeStartGesture(kind) {
+      const gesture = this.pendingStartGesture;
+      this.clearStartGesture();
+      if (kind !== "dictation" || !gesture || this.now() - gesture.at > START_GESTURE_MAX_AGE_MS) return null;
+      return { ctrlKey: gesture.ctrlKey, clickToDetectionMs: Math.max(0, this.now() - gesture.at) };
+    }
+
+    clearStartGesture() {
+      if (this.startGestureTimer) clearTimeout(this.startGestureTimer);
+      this.startGestureTimer = 0;
+      this.pendingStartGesture = null;
     }
 
     visibleButtons() {
@@ -125,7 +164,8 @@
       if (this.current || !this.getSettings().enabled) return;
       if (kind === "voice" && !this.getSettings().voiceMode) return;
       const id = `dictation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-      this.current = { id, kind, startedAt: Date.now(), source };
+      const gesture = this.takeStartGesture(kind);
+      this.current = { id, kind, startedAt: Date.now(), source, discordCtrlClick: gesture?.ctrlKey === true, clickToDetectionMs: gesture?.clickToDetectionMs ?? null };
       this.cancelStopTimer();
       this.onStart({ ...this.current });
       this.publish();
@@ -152,6 +192,7 @@
       const ended = this.current;
       if (!ended) return;
       this.current = null;
+      this.clearStartGesture();
       this.onStop({ ...ended, reason, endedAt: Date.now(), detectedAt: timing.detectedAt ?? (this.win.performance?.now?.() ?? Date.now()), confirmationMs: timing.confirmationMs ?? 0 });
       this.publish();
     }
@@ -178,6 +219,7 @@
       this.observer?.disconnect();
       this.removers.forEach((remove) => remove());
       this.cancelStopTimer();
+      this.clearStartGesture();
     }
   }
 

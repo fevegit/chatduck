@@ -4,19 +4,19 @@ const { ChatGPTDetector, STOP_CONFIRMATION_MS } = require("../src/chatgpt-detect
 
 function fixture(buttons = [], voiceMode = false) {
   const observers = [];
+  const clickListeners = [];
   const states = buttons.map((label) => ({ label, pressed: false }));
+  const makeButton = (state) => ({
+    nodeType: 1, hidden: false, matches: () => true,
+    closest(selector) { return selector === "#chatgpt-audio-ducking-panel" ? null : this; },
+    getAttribute: (name) => name === "aria-label" ? state.label : name === "aria-pressed" ? String(state.pressed) : null,
+    textContent: "", getBoundingClientRect: () => ({ width: 30, height: 30 })
+  });
   const doc = Object.assign(new EventTarget(), {
     documentElement: {},
-    querySelectorAll: () => states.map((state) => ({
-      nodeType: 1,
-      hidden: false,
-      matches: () => true,
-      closest(selector) { return selector === "#chatgpt-audio-ducking-panel" ? null : this; },
-      querySelector: () => null,
-      getAttribute: (name) => name === "aria-label" ? state.label : name === "aria-pressed" ? String(state.pressed) : null,
-      textContent: "",
-      getBoundingClientRect: () => ({ width: 30, height: 30 })
-    }))
+    querySelectorAll: () => states.map(makeButton),
+    addEventListener(name, listener, options) { if (name === "click") clickListeners.push(listener); else EventTarget.prototype.addEventListener.call(this, name, listener, options); },
+    removeEventListener(name, listener, options) { if (name === "click") { const i = clickListeners.indexOf(listener); if (i >= 0) clickListeners.splice(i, 1); } else EventTarget.prototype.removeEventListener.call(this, name, listener, options); }
   });
   class Observer {
     constructor(callback) { this.callback = callback; observers.push(this); }
@@ -53,6 +53,7 @@ function fixture(buttons = [], voiceMode = false) {
       observers.forEach((observer) => observer.trigger());
     },
     setPressed(pressed) { states[0].pressed = pressed; observers.forEach((observer) => observer.trigger()); },
+    emitClick(label = "Dictate", ctrlKey = false, detail = 1) { const target = makeButton({ label, pressed: false }); for (const listener of clickListeners) listener({ target, ctrlKey, detail }); },
     triggerMutationOnControls() { observers.forEach((observer) => observer.trigger()); },
     assertCaptureApisUnchanged() {
       assert.equal(devices.getUserMedia, originalGetUserMedia);
@@ -74,9 +75,38 @@ test("observes dictation start and stop without touching media or permission API
   await new Promise((resolve) => setTimeout(resolve, STOP_CONFIRMATION_MS + 30));
   assert.equal(f.events.stopped.length, 1);
   assert.equal(f.events.stopped[0].reason, "recording-control-ended");
-  assert.ok(f.events.stopped[0].confirmationMs < 200, `stop confirmation took ${f.events.stopped[0].confirmationMs}ms`);
+  assert.ok(f.events.stopped[0].confirmationMs >= STOP_CONFIRMATION_MS, `stop confirmation took ${f.events.stopped[0].confirmationMs}ms`);
   t.diagnostic(`DOM stop confirmation: ${f.events.stopped[0].confirmationMs.toFixed(1)} ms`);
   f.assertCaptureApisUnchanged();
+  f.detector.dispose();
+});
+
+test("Ctrl+click is captured at mic start and stays tied to that dictation only", async () => {
+  const f = fixture(["Dictate"]);
+  f.detector.start();
+  f.emitClick("Dictate", true);
+  f.setButtons(["Stop dictation"]);
+  assert.equal(f.events.started.length, 1);
+  assert.equal(f.events.started[0].discordCtrlClick, true);
+  f.setButtons(["Dictate"]);
+  await new Promise((resolve) => setTimeout(resolve, STOP_CONFIRMATION_MS + 30));
+  f.emitClick("Dictate", false);
+  f.setButtons(["Stop dictation"]);
+  assert.equal(f.events.started.length, 2);
+  assert.equal(f.events.started[1].discordCtrlClick, false);
+  f.detector.dispose();
+});
+
+test("keeps the first pending click modifier and ignores keyboard and non-mic clicks", () => {
+  const f = fixture(["Dictate"]);
+  f.detector.start();
+  f.emitClick("Dictate", false);
+  f.emitClick("Dictate", true);
+  f.emitClick("Stop playback", true);
+  f.emitClick("Dictate", true, 0);
+  f.setButtons(["Stop dictation"]);
+  assert.equal(f.events.started.length, 1);
+  assert.equal(f.events.started[0].discordCtrlClick, false);
   f.detector.dispose();
 });
 
@@ -109,17 +139,18 @@ test("recognizes voice UI only when voice mode is enabled", async () => {
   f.detector.dispose();
 });
 
-test("repeated page mutations do not restart the 32 ms stop confirmation", async () => {
+test("brief control replacement does not restore while the recording UI returns", async () => {
   const f = fixture(["Dictate"]);
   f.detector.start();
   f.setButtons(["Stop dictation"]);
   f.setButtons(["Dictate"]);
-  const startedAt = performance.now();
-  const churn = setInterval(() => f.detector.safeEvaluate("unrelated-page-churn"), 8);
-  await new Promise((resolve) => setTimeout(resolve, 120));
-  clearInterval(churn);
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  f.setButtons(["Stop dictation"]);
+  await new Promise((resolve) => setTimeout(resolve, STOP_CONFIRMATION_MS + 30));
+  assert.equal(f.events.stopped.length, 0);
+  f.setButtons(["Dictate"]);
+  await new Promise((resolve) => setTimeout(resolve, STOP_CONFIRMATION_MS + 30));
   assert.equal(f.events.stopped.length, 1);
-  assert.ok(performance.now() - startedAt < 200);
   f.detector.dispose();
 });
 

@@ -1,9 +1,9 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { MediaController, fingerprint } = require("../src/media-controller.js");
+const { MediaController, fingerprint, collectMediaElements } = require("../src/media-controller.js");
 
 class FakeMedia extends EventTarget {
-  constructor(src, { paused = false, volume = 0.8, acceptsVolume = true, playDelay = 0 } = {}) {
+  constructor(src, { paused = false, volume = 0.8, acceptsVolume = true, playDelay = 0, trace = null } = {}) {
     super();
     this.tagName = "VIDEO";
     this.paused = paused;
@@ -13,16 +13,32 @@ class FakeMedia extends EventTarget {
     this.currentSrc = src;
     this.acceptsVolume = acceptsVolume;
     this.playDelay = playDelay;
+    this.trace = trace;
     this._volume = volume;
+    this._muted = false;
+    Object.defineProperty(this, "muted", {
+      configurable: true,
+      get: () => this._muted,
+      set: (value) => {
+        this._muted = Boolean(value);
+        this.trace?.push({ at: performance.now(), kind: "write", target: "muted", value: this._muted });
+        this.dispatchEvent(new Event("volumechange"));
+      }
+    });
     Object.defineProperty(this, "volume", {
       configurable: true,
       get: () => this._volume,
       set: (value) => {
         if (!this.acceptsVolume) return;
         this._volume = Math.max(0, Math.min(1, value));
+        this.trace?.push({ at: performance.now(), kind: "write", target: "element.volume", value: this._volume });
         this.dispatchEvent(new Event("volumechange"));
       }
     });
+  }
+  dispatchEvent(event) {
+    this.trace?.push({ at: performance.now(), kind: "media-event", name: event.type, volume: this._volume, muted: this._muted });
+    return super.dispatchEvent(event);
   }
   pause() { this.paused = true; this.dispatchEvent(new Event("pause")); }
   play() {
@@ -37,7 +53,7 @@ class FakeMedia extends EventTarget {
 const settings = (mode = "pause", overrides = {}) => ({
   mode, targetVolumePercent: 10,
   fadeOutMs: 0, fadeInMs: 0,
-  fallbackDucking: true, fallbackToPause: true, ...overrides
+  fallbackDucking: true, fallbackToPause: false, ...overrides
 });
 const closeTo = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} ≉ ${expected}`);
 const makeController = (elements, mode = "pause", overrides = {}) => new MediaController({
@@ -59,6 +75,82 @@ test("pauses active media and restores only the pause it owns", async () => {
   await controller.restore("session-12345678");
   assert.equal(first.paused, false);
   assert.equal(alreadyPaused.paused, true);
+});
+
+test("reports detected media action and verified restoration state", async () => {
+  const media = new FakeMedia("https://cdn.example/video.mp4", { volume: 0.8 });
+  const controller = makeController([media], "duck");
+  await controller.begin({ id: "session-diagnostics-123" });
+  assert.deepEqual(controller.diagnostics(), [{
+    id: "tab-1:1", mediaType: "video", origin: "https://cdn.example", action: "duck", playing: true,
+    paused: false, ended: false, readyState: 0, originalVolumePercent: 80, targetVolumePercent: 10,
+    appliedVolumePercent: 10, currentVolumePercent: 10, transitionState: "ducked", manualOverride: false,
+    fallbackUsed: false, reason: ""
+  }]);
+  await controller.restore();
+  closeTo(media.volume, 0.8);
+  assert.deepEqual(controller.diagnostics(), []);
+});
+
+test("on-demand diagnostics include detected but uncontrolled media without inventing an action", async () => {
+  const playing = new FakeMedia("https://cdn.example/live.mp3", { volume: 0.65 });
+  const idle = new FakeMedia("https://cdn.example/idle.mp3", { paused: true, volume: 0.4 });
+  const controller = makeController([], "duck");
+  assert.deepEqual(controller.diagnostics([playing, idle]).map(({ action, reason, playing: isPlaying, currentVolumePercent }) => ({ action, reason, playing: isPlaying, currentVolumePercent })), [
+    { action: "detected", reason: "not-controlled", playing: true, currentVolumePercent: 65 },
+    { action: "detected", reason: "not-playing", playing: false, currentVolumePercent: 40 }
+  ]);
+});
+
+test("unknown domains inherit Ducking and keep media playing through restore", async () => {
+  const core = require("../src/core.js");
+  const settings = core.normalizeSettings({});
+  const href = "https://arbitrary-player.invalid/watch/42";
+  assert.equal(core.shouldManageWeb(href, settings), true);
+  const effective = core.resolveWebsiteOverride(settings, href);
+  assert.equal(effective.mode, "duck");
+  const media = new FakeMedia("https://cdn.invalid/a.mp3", { volume: 0.8 });
+  const controller = new MediaController({
+    getElements: () => [media], locationHref: () => href, tabId: "unknown-site",
+    getSettings: () => settings
+  });
+  await controller.begin({ id: "unknown-domain-session", settings: effective });
+  assert.equal(media.paused, false);
+  closeTo(media.volume, 0.1);
+  assert.equal(controller.diagnostics()[0].action, "duck");
+  const restored = await controller.restore("unknown-domain-session");
+  assert.deepEqual(restored, ["unknown-site:1"]);
+  assert.equal(media.paused, false);
+  closeTo(media.volume, 0.8);
+});
+
+test("collects HTML media from the document and open shadow roots", () => {
+  const media = { matches: (selector) => selector === "audio,video", lastElementChild: null, previousElementSibling: null };
+  const shadowMedia = { matches: (selector) => selector === "audio,video", lastElementChild: null, previousElementSibling: null };
+  const shadowRoot = { nodeType: 11, children: [shadowMedia] };
+  const host = { shadowRoot, lastElementChild: media, previousElementSibling: null, matches: () => false };
+  const doc = { nodeType: 9, children: [host] };
+  const collected = collectMediaElements(doc);
+  assert.equal(collected.length, 2);
+  assert.ok(collected.includes(media) && collected.includes(shadowMedia));
+});
+
+test("independent media controllers duck and restore across 100 simulated tabs", async () => {
+  const count = 100;
+  const pages = Array.from({ length: count }, (_, index) => {
+    const media = new FakeMedia(`https://media-${index}.example/audio.mp3`, { volume: 0.8 });
+    const controller = new MediaController({
+      getElements: () => [media], locationHref: () => `https://media-${index}.example/`,
+      tabId: `tab-${index}`, getSettings: () => settings("duck")
+    });
+    return { media, controller };
+  });
+  const startedAt = performance.now();
+  await Promise.all(pages.map(({ controller }, index) => controller.begin({ id: `session-many-tabs-${index}` })));
+  assert.ok(pages.every(({ media }) => media.volume === 0.1));
+  await Promise.all(pages.map(({ controller }) => controller.restore()));
+  assert.ok(pages.every(({ media }) => media.volume === 0.8));
+  console.log(`ℹ ${count} simulated tabs ducked and restored in ${(performance.now() - startedAt).toFixed(1)} ms`);
 });
 
 test("pause mode fades to zero before pausing and resumes at zero before fading back", async () => {
@@ -209,6 +301,16 @@ test("reports unsupported ducking when pause fallback is disabled", async () => 
   await controller.restore();
 });
 
+test("Ducking never pauses an unsupported player unless Pause fallback is explicitly enabled", async () => {
+  const media = new FakeMedia("https://media.example/a.mp4", { acceptsVolume: false });
+  const controller = makeController([media], "duck");
+  await controller.begin({ id: "session-no-implicit-pause-123" });
+  assert.equal(media.paused, false);
+  assert.equal(controller.status().fallbackPausedCount, 0);
+  await controller.restore();
+  assert.equal(media.paused, false);
+});
+
 test("handles multiple players concurrently when restoring", async (t) => {
   const elements = Array.from({ length: 6 }, (_, index) => new FakeMedia(`https://media.example/${index}.mp4`, { playDelay: 40 }));
   const controller = makeController(elements);
@@ -291,7 +393,7 @@ test("YouTube ducking uses the player volume API and keeps its UI volume synchro
   let playerVolume = 100;
   media.ownerDocument = { getElementById: (id) => id === "movie_player" ? {
     getVolume: () => playerVolume,
-    setVolume: (value) => { playerVolume = value; media._volume = value / 100; }
+    setVolume: (value) => { playerVolume = value; media._volume = value / 100; media.dispatchEvent(new Event("volumechange")); }
   } : null };
   const controller = new MediaController({
     getElements: () => [media], locationHref: () => "https://www.youtube.com/watch?v=abc", tabId: "yt-tab",
@@ -303,6 +405,108 @@ test("YouTube ducking uses the player volume API and keeps its UI volume synchro
   await controller.restore();
   assert.equal(playerVolume, 100);
   closeTo(media.volume, 1);
+});
+
+test("YouTube fade skips writes that round to the current player volume", async () => {
+  const media = new FakeMedia("blob:https://www.youtube.com/stream", { volume: 1 });
+  let playerVolume = 100;
+  let writes = 0;
+  media.ownerDocument = { getElementById: (id) => id === "movie_player" ? {
+    getVolume: () => playerVolume,
+    setVolume: (value) => { writes++; playerVolume = value; media._volume = value / 100; media.dispatchEvent(new Event("volumechange")); }
+  } : null };
+  const controller = new MediaController({
+    getElements: () => [media], locationHref: () => "https://www.youtube.com/watch?v=quantized", tabId: "yt-quantized",
+    getSettings: () => settings("duck", { targetVolumePercent: 99, fadeOutMs: 200 })
+  });
+  await controller.begin({ id: "session-youtube-quantized-123" });
+  assert.equal(playerVolume, 99);
+  assert.ok(writes <= 2, `expected at most one meaningful and one exact write, got ${writes}`);
+  await controller.restore();
+  assert.equal(playerVolume, 100);
+});
+
+function tracedYouTubeMedia(trace, pageHref = "https://www.youtube.com/watch?v=trace") {
+  const media = new FakeMedia("blob:https://www.youtube.com/stream", { volume: 1, trace });
+  let playerVolume = 100;
+  media.ownerDocument = { getElementById: (id) => id === "movie_player" ? {
+    getVolume: () => playerVolume,
+    setVolume: (value) => {
+      playerVolume = value;
+      media._volume = value / 100;
+      trace.push({ at: performance.now(), kind: "write", target: "player.setVolume", value });
+      media.dispatchEvent(new Event("volumechange"));
+    }
+  } : null };
+  return { media, getPlayerVolume: () => playerVolume, pageHref };
+}
+
+test("adopts pending duck state without a premature volume restoration", async (t) => {
+  const trace = [];
+  const { media, getPlayerVolume, pageHref } = tracedYouTubeMedia(trace);
+  const actions = [{ id: "previous-controller", mediaType: "video", sourceFingerprint: `${pageHref}|`, mode: "duck",
+    wasPlaying: true, originalVolume: 1, appliedVolume: 0.25, manualOverride: false, sessionId: "session-old-123456" }];
+  const controller = new MediaController({
+    getElements: () => [media], locationHref: () => pageHref, tabId: "trace-tab",
+    getSettings: () => settings("duck", { targetVolumePercent: 10, fadeOutMs: 0, fadeInMs: 0 }),
+    onChange: (state) => trace.push({ at: performance.now(), kind: "controller", state: state.sessionId, duckedCount: state.duckedCount })
+  });
+  const nativeTransition = controller.transition.bind(controller);
+  controller.transition = (record, target, duration) => {
+    const from = Number.isFinite(record.appliedVolume) ? record.appliedVolume : controller.readVolume(record.element);
+    trace.push({ at: performance.now(), kind: "transition", state: target < from ? "fade-down" : "fade-up", from, target, duration });
+    return nativeTransition(record, target, duration);
+  };
+  await controller.begin({ id: "session-new-123456" }, actions);
+  const record = controller.records.values().next().value;
+  t.diagnostic(JSON.stringify(trace));
+  assert.equal(record.originalVolume, 1, "the new controller must retain the saved restoration value");
+  assert.equal(getPlayerVolume(), 10);
+  assert.equal(trace.some((item) => item.kind === "write" && item.target === "player.setVolume" && item.value === 100), false);
+  assert.equal(trace.some((item) => item.kind === "write" && item.target === "muted"), false);
+  assert.equal(trace.some((item) => item.kind === "media-event" && ["pause", "play"].includes(item.name)), false);
+  await controller.restore();
+  assert.equal(getPlayerVolume(), 100);
+});
+
+test("chronological YouTube trace stays monotonic and never toggles muted or playback", async (t) => {
+  const trace = [];
+  const { media, getPlayerVolume, pageHref } = tracedYouTubeMedia(trace, "https://www.youtube.com/watch?v=monotonic");
+  const controller = new MediaController({
+    getElements: () => [media], locationHref: () => pageHref, tabId: "trace-monotonic",
+    getSettings: () => settings("duck", { targetVolumePercent: 10, fadeOutMs: 200, fadeInMs: 350 }),
+    onChange: (state) => trace.push({ at: performance.now(), kind: "controller", state: state.sessionId, duckedCount: state.duckedCount })
+  });
+  const nativeTransition = controller.transition.bind(controller);
+  controller.transition = (record, target, duration) => {
+    const from = Number.isFinite(record.appliedVolume) ? record.appliedVolume : controller.readVolume(record.element);
+    trace.push({ at: performance.now(), kind: "transition", state: target < from ? "fade-down" : "fade-up", from, target, duration });
+    return nativeTransition(record, target, duration);
+  };
+  await controller.begin({ id: "session-monotonic-123" });
+  const downward = trace.filter((item) => item.kind === "write" && item.target === "player.setVolume").map((item) => item.value);
+  assert.ok(downward.length >= 5, `expected a sequence of volume writes, got ${downward.length}`);
+  assert.ok(downward.every((value, index) => index === 0 || value <= downward[index - 1]), `fade-down oscillated: ${downward}`);
+  const writesBeforeDuplicateStart = trace.filter((item) => item.kind === "write").length;
+  await controller.begin({ id: "session-monotonic-123" });
+  assert.equal(trace.filter((item) => item.kind === "write").length, writesBeforeDuplicateStart, "duplicate start must not add a second controller or fade");
+  const restoreStart = trace.length;
+  await controller.restore();
+  const upward = trace.slice(restoreStart).filter((item) => item.kind === "write" && item.target === "player.setVolume").map((item) => item.value);
+  assert.ok(upward.length >= 5, `expected a restoration sequence, got ${upward.length}`);
+  assert.ok(upward.every((value, index) => index === 0 || value >= upward[index - 1]), `fade-up oscillated: ${upward}`);
+  assert.equal(getPlayerVolume(), 100);
+  assert.equal(trace.some((item) => item.kind === "write" && item.target === "muted"), false);
+  assert.equal(trace.some((item) => item.kind === "write" && item.target === "element.volume"), false, "YouTube API is the sole volume writer for this player");
+  assert.equal(trace.some((item) => item.kind === "media-event" && ["pause", "play"].includes(item.name)), false);
+  assert.equal(controller.snapshot().length, 0, "restoration should leave no owned media records");
+  assert.deepEqual(trace.filter((item) => item.kind === "transition").map((item) => item.state), ["fade-down", "fade-up"],
+    "self-generated volumechange events and duplicate dictation edges must not create extra transitions");
+  const writesAfterRestore = trace.filter((item) => item.kind === "write").length;
+  await controller.restore();
+  assert.equal(trace.filter((item) => item.kind === "write").length, writesAfterRestore, "duplicate end must be idempotent");
+  assert.equal(trace.every((item, index) => index === 0 || item.at >= trace[index - 1].at), true);
+  t.diagnostic(JSON.stringify(trace));
 });
 
 test("fades ducking and restoration with monotonic timers", async () => {
@@ -325,6 +529,36 @@ test("fades ducking and restoration with monotonic timers", async () => {
   const fadeInElapsed = performance.now() - restoreStarted;
   closeTo(media.volume, 0.8);
   assert.ok(fadeInElapsed >= 300 && fadeInElapsed < 900, `fade-in duration ${fadeInElapsed}ms`);
+});
+
+test("a queued callback from a cancelled fade cannot stop its replacement", async () => {
+  const media = new FakeMedia("https://media.example/replaced-fade.mp3", { volume: 0.8 });
+  const controller = makeController([media], "duck");
+  const nativeSetInterval = global.setInterval;
+  const nativeClearInterval = global.clearInterval;
+  const callbacks = new Map();
+  let nextTimerId = 0;
+  global.setInterval = (callback) => { const id = ++nextTimerId; callbacks.set(id, callback); return id; };
+  global.clearInterval = () => {};
+  try {
+    const record = { element: media, mode: "duck", originalVolume: 0.8, appliedVolume: 0.8, applyingVolume: false };
+    const oldFade = controller.transition(record, 0.2, 1000);
+    const oldTimer = record.fadeTimer;
+    const queuedOldCallback = callbacks.get(oldTimer);
+    const replacementFade = controller.transition(record, 0.4, 1000);
+    const replacementTimer = record.fadeTimer;
+
+    queuedOldCallback();
+    assert.equal(record.fadeTimer, replacementTimer);
+    callbacks.get(replacementTimer)();
+    assert.equal(record.fadeTimer, replacementTimer);
+
+    controller.cancelTransition(record);
+    assert.deepEqual(await Promise.all([oldFade, replacementFade]), [false, false]);
+  } finally {
+    global.setInterval = nativeSetInterval;
+    global.clearInterval = nativeClearInterval;
+  }
 });
 
 test("interrupted fades reconcile to the current level before restoring", async () => {

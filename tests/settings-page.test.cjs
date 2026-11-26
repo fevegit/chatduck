@@ -1,8 +1,61 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const core = require("../src/core.js");
 require("../src/i18n.js");
 require("../src/settings-page.js");
+
+test("native interface keeps six short tabs, a fixed shell, one universal web switch, and Ko-fi in the footer", async () => {
+  const previousTheme = globalThis.AudioDuckNativeTheme;
+  globalThis.AudioDuckNativeTheme = fs.readFileSync(path.join(__dirname, "../src/native-preferences.css"), "utf8");
+  const shadow = new ShadowHarness();
+  const settings = core.normalizeSettings({ windowsApps: [{ path: "C:\\Apps\\plezy.exe", enabled: true, appUserModelIds: [] }] });
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => settings, saveSettings: async () => {}, getState: async () => ({ agent: { ok: false, installed: false } }) });
+  page.shadow = shadow; page.opened = true;
+  try {
+    await page.render();
+    assert.match(shadow.html, /data-nav="general"[^>]*>General<\/button>/);
+    assert.match(shadow.html, /data-nav="browser"[^>]*>Web<\/button>/);
+    assert.match(shadow.html, /data-nav="desktop"[^>]*>Windows<\/button>/);
+    assert.match(shadow.html, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+    assert.match(shadow.html, /height:min\(480px/);
+    assert.match(shadow.html, /overflow-y:auto;overflow-x:hidden/);
+    assert.equal((shadow.html.match(/role="tab" data-nav=/g) || []).length, 6);
+    assert.equal((shadow.html.match(/data-web-control/g) || []).length, 1);
+    assert.doesNotMatch(shadow.html, /data-setting="(?:webIntegration|universalWebControl)"/);
+    assert.match(shadow.html, /href="https:\/\/ko-fi\.com\/fevee"[^>]*rel="noopener noreferrer"/);
+    assert.match(shadow.html, /<label class="language-label"[^>]*><span class="language-text">Language<\/span><select/);
+    assert.match(shadow.html, /aria-label="Remove plezy" title="Remove application"/);
+    assert.match(shadow.html, /remove-button[^>]*><svg viewBox="0 0 24 24"[^>]*aria-hidden="true"/);
+    const nativeCss = fs.readFileSync(path.join(__dirname, "../src/native-preferences.css"), "utf8");
+    assert.match(nativeCss, /\.native-footer \.language-label\{display:inline-flex;align-items:center/);
+    assert.match(nativeCss, /\.native-footer \.language-label \.language-text\{display:inline-flex;align-items:center;min-height:30px/);
+    assert.match(nativeCss, /\.native-footer \.language-label select\{display:block;box-sizing:border-box;min-width:82px;height:30px;min-height:30px;[^}]*appearance:none;[^}]*background-position:right 3px center/);
+    assert.match(nativeCss, /\.remove-button svg\{display:block;width:17px;height:17px/);
+    assert.match(shadow.html, /data-agent-status>Windows agent not installed/);
+    assert.doesNotMatch(shadow.html, /Browser mode — Ready/);
+    assert.match(shadow.html, /data-setting="fallbackDucking"/);
+    assert.match(shadow.html, /data-setting="fallbackToPause"/);
+    assert.match(shadow.html, /data-setting="webAudioMuteFallback"/);
+  } finally {
+    if (previousTheme === undefined) delete globalThis.AudioDuckNativeTheme;
+    else globalThis.AudioDuckNativeTheme = previousTheme;
+  }
+});
+
+test("one web toggle synchronizes legacy fields, while active-session controls stay unchanged", async () => {
+  let settings = core.normalizeSettings({ webIntegration: false, universalWebControl: true, fallbackToPause: true });
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => settings, saveSettings: async (value) => { settings = core.normalizeSettings(value); }, getState: async () => ({}) });
+  const toggle = { checked: true, closest: (selector) => selector === "[data-web-control]" ? toggle : null };
+  await page.change({ target: toggle });
+  assert.equal(settings.webIntegration, true);
+  assert.equal(settings.universalWebControl, true);
+  assert.equal(settings.fallbackToPause, true);
+  const locked = { disabled: true, checked: false, dataset: { setting: "voiceMode" }, closest: (selector) => selector === "[data-web-control]" ? null : selector === "[data-setting]" ? locked : null };
+  await page.change({ target: locked });
+  assert.equal(settings.voiceMode, false);
+});
 
 class ShadowHarness {
   constructor() { this.details = []; this.main = { scrollTop: 0 }; this.activeElement = null; this.dialogOpen = false; this.renderCount = 0; }
@@ -33,12 +86,12 @@ test("Advanced and other details stay open across polling and preference updates
   page.opened = true;
   await page.render();
   shadow.querySelector('details[data-section="advanced"]').open = true;
-  shadow.querySelector('details[data-section="web"]').open = true;
+  shadow.querySelector('details[data-section="about"]').open = true;
   shadow.main.scrollTop = 120;
   agentStatus = { ok: false, error: "reconexión" };
   await page.render();
   assert.equal(shadow.querySelector('details[data-section="advanced"]').open, true);
-  assert.equal(shadow.querySelector('details[data-section="web"]').open, true);
+  assert.equal(shadow.querySelector('details[data-section="about"]').open, true);
   assert.equal(shadow.main.scrollTop, 120);
 
   await page.save({ ...settings, fadeInMs: 600 });
@@ -94,7 +147,7 @@ test("poll results defer rendering if a dialog or text field opens while agent s
   assert.equal(page.renderQueued, true);
 });
 
-test("ChatDuck beta.1 settings render the resizable modal and show one global Ducking target", async () => {
+test("ChatDuck 2.8.0 alpha settings render the resizable modal and show one global Ducking target", async () => {
   const settings = core.normalizeSettings({ mode: "duck" });
   const shadow = new ShadowHarness();
   const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
@@ -104,7 +157,7 @@ test("ChatDuck beta.1 settings render the resizable modal and show one global Du
   page.opened = true;
   await page.render();
   const markup = shadow.html.slice(shadow.html.indexOf("</style>"));
-  assert.match(markup, /ChatDuck 2\.7\.6-beta\.1/);
+  assert.match(markup, /ChatDuck 2\.8\.0-alpha\.1/);
   assert.match(markup, /data-size="auto"/);
   assert.match(markup, /data-setting="modalSize"/);
   assert.match(shadow.html, /role="dialog" aria-modal="true"/);
@@ -118,6 +171,17 @@ test("ChatDuck beta.1 settings render the resizable modal and show one global Du
   assert.doesNotMatch(markup, /Prueba de pausa|Restaurar reproducción|HTML5 detectado|class="errors"/);
   assert.doesNotMatch(markup, /data-action="manual-(pause|restore)"/);
   assert.equal(shadow.querySelector('details[data-section="advanced"]').open, false);
+});
+
+test("a clean settings profile starts in Ducking with pause and whole-tab mute fallbacks off", async () => {
+  const shadow = new ShadowHarness();
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => core.normalizeSettings(), saveSettings: async () => {}, getState: async () => ({}) });
+  page.shadow = shadow; page.opened = true; await page.render();
+  const markup = shadow.html.slice(shadow.html.indexOf("</style>"));
+  assert.match(markup, /data-mode="duck" aria-pressed="true"/);
+  assert.match(markup, /data-setting="fallbackToPause"[^>]*\s*>/);
+  assert.match(markup, /data-setting="webAudioMuteFallback"[^>]*\s*>/);
+  assert.doesNotMatch(markup, /data-setting="(?:fallbackToPause|webAudioMuteFallback)"[^>]*checked/);
 });
 
 test("browser-first defaults need no Windows agent and keep advanced controls folded", async () => {
@@ -142,8 +206,11 @@ test("browser-first defaults need no Windows agent and keep advanced controls fo
     assert.equal(shadow.querySelector('details[data-section="advanced"]').open, false);
     assert.match(shadow.html, /Browser mode — Ready/);
     assert.doesNotMatch(shadow.html, /Windows agent disconnected/);
-    assert.match(shadow.html, /data-web-platform="youtube"/);
-    assert.match(shadow.html, /data-web-platform="spotifyWeb"/);
+    assert.match(shadow.html, /data-setting="universalWebControl"/);
+    assert.match(shadow.html, /data-setting="webAudioMuteFallback"/);
+    assert.match(shadow.html, /Mutes the whole tab only when it is audible and no HTML media or iframe is present/);
+    assert.match(shadow.html, /data-action="exclude-current"/);
+    assert.match(shadow.html, /data-action="add-website-override"/);
     assert.match(shadow.html, /data-setting="webIntegration"/);
     assert.match(shadow.html, /Want to control Spotify Desktop or Plex for Windows\?/);
     assert.doesNotMatch(shadow.html, /<dialog[^>]*open/);
@@ -209,26 +276,26 @@ test("saving browser preferences preserves existing per-player and language sett
   assert.deepEqual(settings.customSites, [{ domain: "media.example.org", enabled: true }]);
 });
 
-test("Windows application rows expose a compact, keyboard-accessible trash action and full path", async () => {
-  const path = "C:\\Program Files\\Plex\\Plex\\Plex.exe";
+test("Windows application rows show a compact name and keep executable paths in disclosure", async () => {
+  const appPath = "C:\\Program Files\\Plex\\Plex\\Plex.exe";
   const settings = core.normalizeSettings({ language: "en" });
   const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => settings, saveSettings: async () => {}, getState: async () => ({}) });
-  const row = page.windowAppRow({ path, enabled: true, appUserModelIds: [] }, settings, "");
+  const row = page.windowAppRow({ path: appPath, enabled: true, appUserModelIds: [] }, settings, "");
   assert.match(row, /class="managed-row windows-app-row"/);
   assert.match(row, /class="app-controls"/);
-  assert.match(row, /class="app-path" title="C:\\Program Files\\Plex\\Plex\\Plex\.exe" aria-label="Executable path: C:\\Program Files\\Plex\\Plex\\Plex\.exe" tabindex="0"/);
+  assert.match(row, /<strong>Plex<\/strong><details class="path-details"[^>]*><summary>Show path<\/summary><code title="C:\\Program Files\\Plex\\Plex\\Plex\.exe" aria-label="Executable path: C:\\Program Files\\Plex\\Plex\\Plex\.exe">/);
+  assert.doesNotMatch(row, /<span class="app-path"/);
   assert.match(row, /data-action="remove-app" data-remove-app=/);
-  assert.match(row, /aria-label="Remove Plex\.exe" title="Remove application" type="button"/);
+  assert.match(row, /aria-label="Remove Plex" title="Remove application" type="button"/);
   assert.match(row, /<svg[\s\S]*?aria-hidden="true"><path d="M4 7h16/);
   assert.doesNotMatch(row, />Remove<\/button>/);
   const shadow = new ShadowHarness(); page.shadow = shadow; page.opened = true; await page.render();
-  assert.match(shadow.html, /\.app-path:focus-visible\{[^}]*outline:2px solid #c1afff/);
-  assert.match(shadow.html, /\.app-switch input:checked\+\.switch-ui:after\{transform:translateX\(16px\)/);
-  assert.match(shadow.html, /\.autosave\{display:block;white-space:normal\}/);
+  assert.match(fs.readFileSync(path.join(__dirname, "../src/native-preferences.css"), "utf8"), /\.path-details summary\{cursor:pointer/);
+  assert.match(shadow.html, /\.row input:checked\+\.switch-ui:after\{transform:translateX\(15px\)/);
 
   const spanish = core.normalizeSettings({ language: "es" });
   const esPage = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => spanish, saveSettings: async () => {}, getState: async () => ({}) });
-  assert.match(esPage.windowAppRow({ path, enabled: true, appUserModelIds: [] }, spanish, ""), /title="Eliminar aplicación"/);
+  assert.match(esPage.windowAppRow({ path: appPath, enabled: true, appUserModelIds: [] }, spanish, ""), /title="Eliminar aplicación"/);
 });
 
 test("trash actions still remove Windows apps, custom sites, and Plex origins", async () => {
@@ -298,8 +365,8 @@ test("modal entrance animates once and periodic renders do not restart it", asyn
   assert.doesNotMatch(shadow.html, /class="(?:backdrop|panel) entering"/);
 });
 
-test("settings expose custom player volume, compact agent state, and one fixed Ko-fi link", async () => {
-  const settings = core.normalizeSettings({ mode: "duck", playerRules: { youtube: { mode: "duck", targetVolumePercent: 15 } }, customSites: [{ domain: "example.org", enabled: true }], plexOrigins: ["http://192.168.1.25:32400"] });
+test("settings expose universal overrides, compact agent state, and one fixed Ko-fi link", async () => {
+  const settings = core.normalizeSettings({ mode: "duck", websiteOverrides: { "example.org": { mode: "duck", targetVolumePercent: 15 } }, excludedDomains: "blocked.org", plexOrigins: ["http://192.168.1.25:32400"] });
   const shadow = new ShadowHarness();
   const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
     doc: {}, getSettings: () => settings, saveSettings: async () => {},
@@ -309,18 +376,17 @@ test("settings expose custom player volume, compact agent state, and one fixed K
   page.opened = true;
   await page.render();
   const markup = shadow.html.slice(shadow.html.indexOf("</style>"));
-  assert.match(markup, /data-web-platform="plexWeb"/);
-  assert.match(markup, /data-rule-mode="youtube"/);
-  assert.match(markup, /value="duck" selected/);
-  assert.match(markup, /data-rule-target="youtube" value="15"/);
-  assert.match(markup, /data-rule-target-source="youtube"/);
-  assert.match(markup, /value="custom" selected>Custom/);
+  assert.match(markup, /data-website-mode="example\.org"/);
+  assert.match(markup, /data-website-target="example\.org"/);
+  assert.match(markup, /blocked\.org/);
+  assert.match(markup, /Universal Web Control/);
   assert.match(markup, /Browser mode — Ready/);
   assert.doesNotMatch(markup, /Windows agent disconnected/);
   assert.match(markup, /https:\/\/ko-fi\.com\/fevee/);
-  assert.match(markup, /data-action="remove-site"[^>]*title="Remove site"/);
-  assert.match(markup, /data-action="remove-plex-origin"[^>]*title="Remove server"/);
-  assert.equal((markup.match(/class="quiet icon-button remove-button"/g) || []).length, 2);
+  assert.match(markup, /data-action="exclude-current"/);
+  assert.match(markup, /data-action="add-website-override"/);
+  assert.doesNotMatch(markup, /data-discord-(?:enabled|mode)|discord-check/);
+  assert.match(markup, /data-nav="diagnostics"/);
   assert.equal((markup.match(/https:\/\/ko-fi\.com\/fevee/g) || []).length, 1);
   assert.match(markup, /target="_blank" rel="noopener noreferrer"/);
   assert.match(markup, /data-section="technical-info"/);
@@ -328,23 +394,36 @@ test("settings expose custom player volume, compact agent state, and one fixed K
   assert.doesNotMatch(markup, /Control del reproductor HTML5/);
 });
 
-test("per-player volume is hidden for effective Pause and inherited global Ducking is explicit", async () => {
-  async function markupFor(input, key) {
+test("per-website overrides inherit mode and support custom Ducking targets", async () => {
+  async function markupFor(input) {
     const shadow = new ShadowHarness();
     const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => core.normalizeSettings(input), saveSettings: async () => {}, getState: async () => ({}) });
     page.shadow = shadow; page.opened = true; await page.render();
-    const start = shadow.html.indexOf(`data-section="policy-${encodeURIComponent(key)}"`);
-    const end = shadow.html.indexOf("</details>", start);
-    return shadow.html.slice(start, end);
+    return shadow.html;
   }
-  const paused = await markupFor({ mode: "pause", playerRules: { youtube: { mode: "general", targetVolumePercent: 27 } } }, "youtube");
-  assert.doesNotMatch(paused, /data-rule-target-source|data-rule-target=/);
-  const ducking = await markupFor({ mode: "duck", targetVolumePercent: 10, playerRules: { youtube: { mode: "general", targetVolumePercent: null } } }, "youtube");
-  assert.match(ducking, /Use global volume \(10%\)/);
-  assert.match(ducking, /Using global volume: 10%/);
-  assert.doesNotMatch(ducking, /data-rule-target=/);
-  const explicitPause = await markupFor({ mode: "duck", playerRules: { youtube: { mode: "pause", targetVolumePercent: 27 } } }, "youtube");
-  assert.doesNotMatch(explicitPause, /data-rule-target-source|data-rule-target=/);
+  const inherited = await markupFor({ websiteOverrides: { "example.org": { mode: "inherit", targetVolumePercent: null } } });
+  assert.match(inherited, /data-website-mode="example\.org"[\s\S]*?value="inherit" selected/);
+  const custom = await markupFor({ mode: "duck", targetVolumePercent: 10, websiteOverrides: { "example.org": { mode: "duck", targetVolumePercent: 27 } } });
+  assert.match(custom, /value="27" data-website-target="example\.org"/);
+});
+
+test("current-site actions save boundary-safe exclusions and inheriting overrides", async () => {
+  const priorLocation = globalThis.location;
+  Object.defineProperty(globalThis, "location", { configurable: true, value: new URL("https://media.example.org/watch") });
+  let settings = core.normalizeSettings();
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => settings, saveSettings: async (next) => { settings = core.normalizeSettings(next); }, getState: async () => ({}) });
+  page.shadow = { querySelector: () => null };
+  page.render = async () => {};
+  const clickAction = (action) => page.click({ target: { closest: (selector) => selector === "[data-action]" ? { dataset: { action } } : null } });
+  try {
+    await clickAction("exclude-current");
+    assert.equal(settings.excludedDomains, "media.example.org");
+    await clickAction("add-website-override");
+    assert.deepEqual(settings.websiteOverrides["media.example.org"], { enabled: true, mode: "inherit", targetVolumePercent: null });
+  } finally {
+    if (priorLocation === undefined) delete globalThis.location;
+    else Object.defineProperty(globalThis, "location", { configurable: true, value: priorLocation });
+  }
 });
 
 test("changing target source preserves the stored custom percentage for later use", async () => {
@@ -363,6 +442,89 @@ test("changing target source preserves the stored custom percentage for later us
   assert.equal(core.resolvePlayerRule(settings, "youtube").targetVolumePercent, 27);
 });
 
+test("Discord microphone mute is an independent Windows preference", async () => {
+  const previousTheme = globalThis.AudioDuckNativeTheme;
+  globalThis.AudioDuckNativeTheme = fs.readFileSync(path.join(__dirname, "../src/native-preferences.css"), "utf8");
+  let settings = core.normalizeSettings();
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => settings, saveSettings: async (next) => { settings = core.normalizeSettings(next); }, getState: async () => ({ agent: { ok: true } }) });
+  page.shadow = new ShadowHarness();
+  page.opened = true;
+  page.activePage = "desktop";
+  try {
+    await page.render();
+    assert.match(page.shadow.html, /data-setting="discordMuteDuringDictation"/);
+    assert.match(page.shadow.html, /data-setting="discordDeafenDuringDictation"/);
+    assert.match(page.shadow.html, /value="automatic" data-setting="discordActivationMode"[^>]*checked/);
+    assert.match(page.shadow.html, /value="ctrl-click" data-setting="discordActivationMode"/);
+    assert.match(page.shadow.html, /Automatic on every dictation/);
+    assert.match(page.shadow.html, /Only on Ctrl \+ click/);
+    const ctrlMode = { type: "radio", value: "ctrl-click", disabled: false, dataset: { setting: "discordActivationMode" } };
+    await page.change({ stopPropagation() {}, target: { closest: (selector) => selector === "[data-setting]" ? ctrlMode : null } });
+    assert.equal(settings.discordActivationMode, "ctrl-click");
+    const automaticMode = { ...ctrlMode, value: "automatic" };
+    await page.change({ stopPropagation() {}, target: { closest: (selector) => selector === "[data-setting]" ? automaticMode : null } });
+    assert.equal(settings.discordActivationMode, "automatic");
+    assert.match(page.shadow.html, /Mute Discord microphone while dictating/);
+    assert.match(page.shadow.html, /Deafen Discord while dictating/);
+    assert.doesNotMatch(page.shadow.html, /data-setting="discordMuteDuringDictation"[^>]*checked/);
+    assert.doesNotMatch(page.shadow.html, /data-setting="discordDeafenDuringDictation"[^>]*checked/);
+    settings.discordMuteDuringDictation = true;
+    await page.render();
+    assert.match(page.shadow.html, /Update the Windows agent to enable Discord controls/);
+    settings.discordMuteDuringDictation = false;
+    settings.language = "es";
+    await page.render();
+    assert.match(page.shadow.html, /Silenciar el micrófono de Discord durante el dictado/);
+    assert.match(page.shadow.html, /Ensordecer Discord durante el dictado/);
+    assert.match(page.shadow.html, /Automática en cada dictado/);
+    assert.match(page.shadow.html, /Solo al pulsar Ctrl \+ clic/);
+  } finally {
+    if (previousTheme === undefined) delete globalThis.AudioDuckNativeTheme;
+    else globalThis.AudioDuckNativeTheme = previousTheme;
+  }
+});
+
+test("media diagnostics are gathered only on request and retain detailed control state without URLs", async () => {
+  let scans = 0;
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({
+    doc: {}, getSettings: () => core.normalizeSettings(), saveSettings: async () => {}, getState: async () => ({}),
+    getDiagnostics: async () => { scans++; return [{ host: "player.example", status: "ready", registered: true, eligible: true, isTop: true, globalMode: "duck", effectiveMode: "duck", targetVolumePercent: 10, htmlMediaCount: 2, playingCount: 1, controlledCount: 1, url: "https://player.example/watch?token=secret", lastRestore: { verified: true, path: "/private" }, players: [{ mediaType: "audio", action: "duck", playing: true, originalVolumePercent: 80, targetVolumePercent: 10, appliedVolumePercent: 10, currentVolumePercent: 10, source: "https://player.example/a.mp3?token=secret" }] }]; }
+  });
+  page.shadow = new ShadowHarness(); page.render = async () => {};
+  assert.equal(scans, 0);
+  await page.click({ target: { closest: (selector) => selector === "[data-nav]" ? { dataset: { nav: "diagnostics" } } : null } });
+  assert.equal(scans, 1);
+  assert.equal(page.diagnosticState[0].host, "player.example");
+  assert.equal(page.diagnosticState[0].effectiveMode, "duck");
+  assert.equal(page.diagnosticState[0].players[0].currentVolumePercent, 10);
+  assert.equal(page.diagnosticState[0].players[0].source, undefined);
+  assert.equal(page.diagnosticState[0].lastRestore.verified, true);
+  const report = JSON.parse(page.anonymizedDiagnosticReport());
+  assert.equal(report.frames[0].site, "site-1");
+  assert.equal(JSON.stringify(report).includes("player.example"), false);
+  assert.equal(JSON.stringify(report).includes("secret"), false);
+  assert.equal(JSON.stringify(report).includes("https://"), false);
+});
+
+test("section navigation exposes one selected page and splits desktop from advanced controls", () => {
+  const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => core.normalizeSettings(), saveSettings: async () => {}, getState: async () => ({}) });
+  const sections = Array.from({ length: 5 }, () => ({ hidden: false }));
+  const groups = [{ hidden: false }, { hidden: false }];
+  const advanced = { hidden: false, open: false, querySelectorAll: () => groups };
+  const title = { textContent: "" };
+  const main = { querySelectorAll: () => sections, querySelector: (selector) => selector === ".advanced" ? advanced : title };
+  const navButtons = ["general", "browser", "desktop", "advanced", "diagnostics", "about"].map((nav) => ({ dataset: { nav }, setAttribute(name, value) { this[name] = value; }, removeAttribute(name) { delete this[name]; } }));
+  page.shadow = { querySelector: (selector) => selector === ".panel" ? { dataset: {} } : selector === "main" ? main : null, querySelectorAll: () => navButtons };
+  page.activePage = "advanced";
+  page.applyPage();
+  assert.equal(title.textContent, "Technical details");
+  assert.deepEqual(sections.map((section) => section.hidden), [true, true, true, true, true]);
+  assert.deepEqual(groups.map((group) => group.hidden), [true, false]);
+  assert.equal(navButtons.find((button) => button.dataset.nav === "advanced")["aria-current"], "page");
+  page.activePage = "desktop"; page.applyPage();
+  assert.deepEqual(groups.map((group) => group.hidden), [false, true]);
+});
+
 test("state polling updates only the status without replacing controls", async () => {
   let agent = { ok: false };
   const shadow = new ShadowHarness();
@@ -375,20 +537,19 @@ test("state polling updates only the status without replacing controls", async (
 });
 
 test("settings render in Spanish with translated controls and preserve all 2.7.0 preferences", async () => {
-  const settings = core.normalizeSettings({ language: "es", mode: "duck", targetVolumePercent: 21, spotifyDesktop: false, playerRules: { plexWeb: { mode: "pause" } }, customSites: [{ domain: "example.org", enabled: true }] });
+  const settings = core.normalizeSettings({ language: "es", mode: "duck", targetVolumePercent: 21, spotifyDesktop: false, playerRules: { plexWeb: { mode: "pause" } }, websiteOverrides: { "example.org": { mode: "pause" } } });
   const shadow = new ShadowHarness();
   const page = new globalThis.AudioDuckSettingsPage.SettingsPage({ doc: {}, getSettings: () => settings, saveSettings: async () => {}, getState: async () => ({}) });
   page.shadow = shadow; page.opened = true;
   await page.render();
   assert.match(shadow.html, /value="es" selected>Español/);
-  assert.match(shadow.html, /class="panel" data-focus="panel" data-size="auto" lang="es"/);
-  assert.match(shadow.html, />Integraciones web</);
+  assert.match(shadow.html, /class="panel" data-focus="panel" data-page="general" data-size="auto" lang="es"/);
+  assert.match(shadow.html, />Control web universal</);
   assert.match(shadow.html, />Pausar</);
   assert.match(shadow.html, />Avanzado</);
-  assert.match(shadow.html, /Spotify Web/);
+  assert.match(shadow.html, /Control web universal/);
   assert.match(shadow.html, /example\.org/);
-  assert.match(shadow.html, /data-web-platform="spotifyWeb"/);
-  assert.match(shadow.html, /data-rule-mode="plexWeb"/);
+  assert.match(shadow.html, /data-website-mode="example\.org"/);
   assert.doesNotMatch(shadow.html, />Web integrations</);
 });
 
@@ -406,7 +567,7 @@ test("modal open, Escape, backdrop close, and reopen clean up listeners and rest
           return {
             activeElement: null,
             addEventListener() { adds++; }, removeEventListener() { removes++; },
-            querySelector(selector) { return selector === ".panel" ? panel : selector === "[data-backdrop]" ? backdrop : null; }
+            querySelector(selector) { return [".window,.panel", ".panel"].includes(selector) ? panel : selector === "[data-backdrop]" ? backdrop : null; }
           };
         },
         remove() { detached++; }

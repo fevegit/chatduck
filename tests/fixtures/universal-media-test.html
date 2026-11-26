@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChatDuck Universal Media Fixture</title>
+<h1>Universal media fixture</h1>
+<p>Use this page with an active ChatGPT dictation session. All audio is silent.</p>
+<button id="play">Play all audio</button>
+<button id="add">Add a playing audio element</button>
+<audio id="audio-a" loop src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAAA"></audio>
+<audio id="audio-b" loop src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAAA"></audio>
+<video id="video-a" controls></video>
+<iframe title="same-origin media frame" src="universal-media-frame.html"></iframe>
+<div id="shadow-host"></div>
+<output id="status" aria-live="polite">Ready</output>
+<script>
+  const wav = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAAA";
+  const shadow = document.querySelector("#shadow-host").attachShadow({ mode: "open" });
+  shadow.innerHTML = `<audio id="shadow-audio" loop src="${wav}"></audio><video id="shadow-video"></video>`;
+  document.querySelector("#play").onclick = async () => {
+    const audios = [...document.querySelectorAll("audio"), shadow.querySelector("audio")];
+    await Promise.all(audios.map((audio) => audio.play().catch(() => {})));
+    document.querySelector("#status").value = `Playing ${audios.length} audio elements`;
+  };
+  document.querySelector("#add").onclick = async () => {
+    const audio = document.createElement("audio");
+    audio.src = wav; audio.loop = true; document.body.append(audio);
+    await audio.play().catch(() => {});
+    document.querySelector("#status").value = "Dynamic audio added";
+  };
+</script>
+</html>

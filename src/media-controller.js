@@ -16,6 +16,23 @@
     return `${pageKey}|${sourceKey}`;
   }
 
+  function collectMediaElements(rootDocument) {
+    const result = new Set(), visited = new Set();
+    const visit = (rootNode) => {
+      if (!rootNode || visited.has(rootNode)) return;
+      visited.add(rootNode);
+      const pending = rootNode.nodeType === 1 ? [rootNode] : [...(rootNode.children || [])];
+      while (pending.length) {
+        const element = pending.pop();
+        if (element.matches?.("audio,video")) result.add(element);
+        if (element.shadowRoot) visit(element.shadowRoot);
+        for (let child = element.lastElementChild; child; child = child.previousElementSibling) pending.push(child);
+      }
+    };
+    visit(rootDocument);
+    return [...result];
+  }
+
   async function fingerprint(pageHref, mediaSrc) {
     const value = mediaFingerprint(pageHref, mediaSrc);
     if (!value || !root.crypto?.subtle) return "";
@@ -24,7 +41,7 @@
   }
 
   class MediaController {
-    constructor({ getElements, locationHref, tabId, getSettings, onChange = () => {}, onError = () => {}, persist = () => {} }) {
+    constructor({ getElements, locationHref, tabId, getSettings, onChange = () => {}, onError = () => {}, persist = () => {}, trace = () => {} }) {
       this.getElements = getElements;
       this.locationHref = locationHref;
       this.tabId = tabId;
@@ -32,6 +49,7 @@
       this.onChange = onChange;
       this.onError = onError;
       this.persist = persist;
+      this.trace = trace;
       this.sessionId = null;
       this.records = new Map();
       this.elements = new WeakMap();
@@ -62,6 +80,7 @@
     writeVolume(record, volume) {
       const player = this.youtubePlayer(record.element);
       record.applyingVolume = true;
+      this.trace("volume-write-attempt", record, { writer: player ? "youtube-player-api" : "html-media-element", requested: volume, before: this.readVolume(record.element) });
       try {
         if (player) player.setVolume(Math.round(volume * 100));
         else record.element.volume = volume;
@@ -69,11 +88,14 @@
         if (!Number.isFinite(actual) || Math.abs(actual - volume) > (player ? 0.011 : 0.001)) throw new Error("el reproductor no aceptó el volumen solicitado");
         record.appliedVolume = actual;
         record.attenuated = actual < record.originalVolume - 0.00001;
+        record.error = "";
+        this.trace("volume-write", record, { writer: player ? "youtube-player-api" : "html-media-element", requested: volume, actual });
         return actual;
       } finally { record.applyingVolume = false; }
     }
 
     cancelTransition(record) {
+      if (record.fadeTimer) this.trace("transition-cancel", record, { transitionId: record.transitionId, state: record.transitionState });
       if (record.fadeTimer) clearInterval(record.fadeTimer);
       record.fadeTimer = 0;
       record.fadeResolve?.(false);
@@ -87,31 +109,46 @@
       const start = this.readVolume(record.element);
       record.appliedVolume = start;
       const duration = Math.max(0, Number(durationMs) || 0);
-      if (duration === 0 || Math.abs(start - target) < 0.001) {
-        try { this.writeVolume(record, target); return Promise.resolve(true); }
+      this.trace("transition-start", record, { transitionId, from: start, target, durationMs: duration });
+      const writeThreshold = this.youtubePlayer(record.element) ? 0.0051 : 0.0005;
+      if (duration === 0) {
+        try { if (Math.abs(start - target) >= 0.000001) this.writeVolume(record, target); return Promise.resolve(true); }
         catch (error) { return Promise.reject(error); }
       }
+      if (Math.abs(start - target) < writeThreshold) return Promise.resolve(true);
       const now = () => globalThis.performance?.now?.() ?? Date.now();
       const startedAt = now();
       let lastPersist = 0;
       return new Promise((resolve, reject) => {
         record.fadeResolve = resolve;
+        let timerId = 0;
+        const ownsTimer = () => record.transitionId === transitionId && record.fadeTimer === timerId;
         const finish = (completed) => {
-          clearInterval(record.fadeTimer);
+          clearInterval(timerId);
+          if (!ownsTimer()) { resolve(false); return; }
+          this.trace("transition-finish", record, { transitionId, completed });
           record.fadeTimer = 0;
           record.fadeResolve = null;
           if (completed) this.changed();
           resolve(completed);
         };
-        record.fadeTimer = setInterval(() => {
+        timerId = setInterval(() => {
           if (record.transitionId !== transitionId) { finish(false); return; }
           const progress = Math.min(1, Math.max(0, (now() - startedAt) / duration));
           const value = start + (target - start) * progress;
-          try { this.writeVolume(record, progress === 1 ? target : value); }
-          catch (error) { clearInterval(record.fadeTimer); record.fadeTimer = 0; record.fadeResolve = null; reject(error); return; }
+          const next = progress === 1 ? target : value;
+          try {
+            if (progress === 1 || Math.abs(next - record.appliedVolume) >= writeThreshold) this.writeVolume(record, next);
+          } catch (error) {
+            clearInterval(timerId);
+            if (ownsTimer()) { record.fadeTimer = 0; record.fadeResolve = null; }
+            reject(error);
+            return;
+          }
           if (now() - lastPersist >= 64) { lastPersist = now(); this.changed(); }
           if (progress === 1) finish(true);
         }, 16);
+        record.fadeTimer = timerId;
       });
     }
 
@@ -119,7 +156,7 @@
       return [...this.getElements()].filter((element) => element && !element.paused && !element.ended);
     }
 
-    async begin(session) {
+    async begin(session, pendingActions = []) {
       const sessionId = session.id || session.sessionId;
       if (!sessionId) return this.status();
       const newSession = this.sessionId && this.sessionId !== sessionId;
@@ -129,12 +166,41 @@
         for (const record of this.records.values()) this.cancelTransition(record);
       }
       this.sessionId = sessionId;
+      this.trace("controller-begin", null, { sessionId, newSession, pendingCount: pendingActions.length, recordCount: this.records.size });
       const generation = ++this.generation;
       const settings = session.settings || this.getSettings();
       const duckJobs = [];
       const pauseJobs = [];
+      const pendingByElement = new Map();
+      const available = new Set(this.getElements());
+      for (const action of Array.isArray(pendingActions) ? pendingActions : []) {
+        if (action?.mode !== "duck" || action.manualOverride || !action.sourceFingerprint ||
+            !Number.isFinite(action.originalVolume) || action.originalVolume < 0 || action.originalVolume > 1 ||
+            !Number.isFinite(action.appliedVolume) || action.appliedVolume < 0 || action.appliedVolume > 1) continue;
+        for (const element of available) {
+          if ((element.tagName?.toLowerCase() || "media") !== action.mediaType) continue;
+          const pageHref = this.locationHref();
+          const source = element.currentSrc || element.src || "";
+          const mediaId = mediaFingerprint(pageHref, source);
+          let matches = action.sourceFingerprint === mediaId;
+          if (!matches) {
+            try { matches = await fingerprint(pageHref, source) === action.sourceFingerprint; }
+            catch (_) { matches = false; }
+          }
+          if (!matches) continue;
+          try {
+            const current = this.readVolume(element);
+            const tolerance = this.youtubePlayer(element) ? 0.012 : 0.00001;
+            if (Number.isFinite(current) && Math.abs(current - action.appliedVolume) < tolerance) {
+              pendingByElement.set(element, action);
+              break;
+            }
+          } catch (_) { /* Ignore a pending record for a media element that is no longer readable. */ }
+        }
+      }
 
       const candidates = new Set(this.activeElements());
+      for (const element of pendingByElement.keys()) candidates.add(element);
       for (const record of this.records.values()) {
         if (record.ownsPause && !record.manualOverride && !record.element.ended) candidates.add(record.element);
       }
@@ -169,6 +235,8 @@
           continue;
         }
         if (prior) this.forget(prior);
+        const pending = pendingByElement.get(element);
+        const currentVolume = this.readVolume(element);
         const record = {
           id: `${this.tabId}:${this.nextId++}`,
           element,
@@ -178,9 +246,9 @@
           sourceAtPause: source,
           mediaIdentity: mediaFingerprint(pageHref, source),
           mode: settings.mode,
-          wasPlaying: true,
-          originalVolume: this.readVolume(element),
-          appliedVolume: null,
+          wasPlaying: !element.paused && !element.ended,
+          originalVolume: pending ? pending.originalVolume : currentVolume,
+          appliedVolume: pending ? currentVolume : null,
           sessionId,
           targetVolumePercent: settings.targetVolumePercent,
           fadeOutMs: settings.fadeOutMs ?? 200,
@@ -193,6 +261,7 @@
           transitionState: "idle",
           fallbackUsed: false,
           unsupported: false,
+          error: "",
           pauseCommandPending: false,
           applyingVolume: false,
           listeners: []
@@ -298,8 +367,12 @@
     }
 
     listen(record, name, handler) {
-      record.element.addEventListener(name, handler);
-      record.listeners.push([name, handler]);
+      const listener = (event) => {
+        this.trace("media-event", record, { name, volume: this.readVolume(record.element), muted: Boolean(record.element.muted), paused: Boolean(record.element.paused), applyingVolume: Boolean(record.applyingVolume) });
+        handler(event);
+      };
+      record.element.addEventListener(name, listener);
+      record.listeners.push([name, listener]);
     }
 
     forget(record) {
@@ -318,9 +391,11 @@
         record.pauseOperationId = (record.pauseOperationId || 0) + 1;
         record.mode = "duck";
         record.transitionState = "ducking";
-        await this.transition(record, target, durationMs);
+        const completed = await this.transition(record, target, durationMs);
+        if (completed && record.mode === "duck") record.transitionState = "ducked";
       } catch (error) {
         record.appliedVolume = null;
+        record.error = String(error?.message || error).slice(0, 180);
         try { this.writeVolume(record, record.originalVolume); } catch (_) {}
         if (record.fallbackToPause) {
           try {
@@ -381,7 +456,7 @@
     status() {
       return {
         sessionId: this.sessionId,
-        playingCount: this.activeElements().length,
+        playingCount: [...this.records.values()].filter((record) => !record.element.paused && !record.element.ended).length,
         touchedCount: this.records.size,
         pausedCount: [...this.records.values()].filter((record) => record.mode === "pause" && record.ownsPause && !record.manualOverride).length,
         duckedCount: [...this.records.values()].filter((record) => record.mode === "duck" && record.attenuated).length,
@@ -393,8 +468,40 @@
             .map((record) => Math.round(record.appliedVolume * 100));
           return levels.length ? [Math.min(...levels), Math.max(...levels)] : null;
         })(),
-        errors: []
+        errors: [...this.records.values()].filter((record) => record.error).map((record) => ({ id: record.id, message: record.error }))
       };
+    }
+
+    diagnostics(elements = null) {
+      const candidates = elements ? [...new Set(elements)] : [...this.records.values()].map((record) => record.element);
+      return candidates.map((element) => {
+        const record = this.elements.get(element) || null;
+        let origin = "";
+        try { origin = new URL(element.currentSrc || element.src || this.locationHref()).origin; } catch (_) {}
+        let currentVolumePercent = null;
+        try {
+          const volume = this.readVolume(element);
+          if (Number.isFinite(volume)) currentVolumePercent = Math.round(volume * 100);
+        } catch (_) {}
+        return {
+          id: record?.id || null,
+          mediaType: element.tagName?.toLowerCase() || "media",
+          origin,
+          action: !record ? "detected" : record.unsupported ? "unsupported" : record.mode === "pause" ? "pause" : record.attenuated ? "duck" : "unchanged",
+          playing: !element.paused && !element.ended,
+          paused: Boolean(element.paused),
+          ended: Boolean(element.ended),
+          readyState: Number(element.readyState) || 0,
+          originalVolumePercent: Number.isFinite(record?.originalVolume) ? Math.round(record.originalVolume * 100) : null,
+          targetVolumePercent: Number.isFinite(record?.targetVolumePercent) ? Math.round(record.targetVolumePercent) : null,
+          appliedVolumePercent: Number.isFinite(record?.appliedVolume) ? Math.round(record.appliedVolume * 100) : null,
+          currentVolumePercent,
+          transitionState: record?.transitionState || "idle",
+          manualOverride: Boolean(record?.manualOverride),
+          fallbackUsed: Boolean(record?.fallbackUsed),
+          reason: record?.error || (record?.unsupported ? "volume-control-rejected" : !record ? (element.paused ? "not-playing" : "not-controlled") : "")
+        };
+      });
     }
 
     snapshot() {
@@ -429,6 +536,10 @@
           }
         }
         if (!element) continue;
+        // A live controller owns this element and will reconcile its current
+        // transition. Restoring a saved snapshot here would briefly expose the
+        // original volume before the next session ducks it again.
+        if (this.elements.has(element)) continue;
         const currentVolume = this.readVolume(element);
         if (action.mode === "duck" && action.appliedVolume !== null && Math.abs(currentVolume - action.appliedVolume) < (this.youtubePlayer(element) ? 0.012 : 0.00001)) {
           const record = { element, originalVolume: action.originalVolume, appliedVolume: action.appliedVolume, applyingVolume: false };
@@ -463,6 +574,7 @@
       const generation = ++this.generation;
       const restored = [];
       const playJobs = [];
+      const records = [...this.records.values()];
       this.restoring = true;
       try {
         for (const [id, record] of this.records) {
@@ -503,6 +615,31 @@
           }
         }
         await Promise.all(playJobs);
+        let manualPreservedCount = 0;
+        let errorCount = 0;
+        for (const record of records) {
+          let verified = false;
+          if (record.manualOverride || record.element.ended) {
+            verified = true;
+            if (record.manualOverride) manualPreservedCount++;
+          } else {
+            try {
+              const current = this.readVolume(record.element);
+              const tolerance = this.youtubePlayer(record.element) ? 0.012 : 0.00001;
+              const volumeRestored = Number.isFinite(current) && Number.isFinite(record.originalVolume) && Math.abs(current - record.originalVolume) <= tolerance;
+              const playbackRestored = record.mode !== "pause" || !record.wasPlaying || !record.ownsPause || !record.element.paused;
+              verified = volumeRestored && playbackRestored;
+            } catch (_) { verified = false; }
+          }
+          if (!verified) errorCount++;
+        }
+        this.lastRestore = {
+          totalCount: records.length,
+          restoredCount: restored.length,
+          manualPreservedCount,
+          errorCount,
+          verified: records.length > 0 && errorCount === 0
+        };
       } finally {
         if (generation !== this.generation) return [];
         this.restoring = false;
@@ -522,7 +659,7 @@
     }
   }
 
-  const api = { MediaController, mediaFingerprint, fingerprint };
+  const api = { MediaController, mediaFingerprint, fingerprint, collectMediaElements };
   root.AudioDuckMedia = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(globalThis);

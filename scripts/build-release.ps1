@@ -30,7 +30,7 @@ $staleAssets = @(
 Remove-Item -LiteralPath $staleAssets -Force -ErrorAction SilentlyContinue
 & $dotnet publish (Join-Path $root 'agent\AudioDuckingAgent.csproj') -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o $publish -v minimal
 if ($LASTEXITCODE -ne 0) { throw 'Windows agent publish failed.' }
-& $wix build -arch x64 -d "Version=$msiVersion" -d "PublishDir=$publish" -d "ProjectDir=$root" -ext WixToolset.UI.wixext (Join-Path $root 'agent\AudioDuckingAgent.wxs') -o $msi
+& $wix build -arch x64 -d "Version=$msiVersion" -d 'ProductName=ChatDuck Windows Agent' -d 'UpgradeCode={75A2EB87-3A7D-4A1C-A128-6BD4A88DB93F}' -d 'InstallFolderName=ChatGPTAudioDuckingTM' -d 'LegacyInstallFolderName=ChatGPTAudioDuckingTM' -d 'MenuFolderName=ChatDuck' -d 'ShortcutName=ChatDuck Agent' -d 'RegistryKey=Software\AudioDucking\Agent' -d 'AgentArgs=' -d 'InstallerVariant=self-contained' -d 'SelfContained=1' -d 'ForceQaFailure=0' -d "PublishDir=$publish" -d "ProjectDir=$root" -ext WixToolset.UI.wixext (Join-Path $root 'agent\AudioDuckingAgent.wxs') -o $msi
 if ($LASTEXITCODE -ne 0) { throw 'Windows installer build failed.' }
 Remove-Item -LiteralPath $wixPdb -Force -ErrorAction SilentlyContinue
 

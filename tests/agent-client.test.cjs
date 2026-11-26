@@ -43,6 +43,33 @@ test("agent stays unconfigured until a per-install token is paired", async () =>
   await assert.rejects(api.request({ command: "status" }), /empareja/i);
 });
 
+test("Discord preferences require explicit agent capabilities", () => {
+  const { api } = context();
+  const requested = { discordMuteDuringDictation: true, discordDeafenDuringDictation: true };
+  assert.deepEqual({ ...api.discordPreferences(requested, {}) }, {
+    discordMuteDuringDictation: false, discordDeafenDuringDictation: false, unsupported: true
+  });
+  assert.deepEqual({ ...api.discordPreferences(requested, { capabilities: ["discordMute"] }) }, {
+    discordMuteDuringDictation: true, discordDeafenDuringDictation: false, unsupported: true
+  });
+  assert.deepEqual({ ...api.discordPreferences(requested, { capabilities: ["discordMute", "discordDeafen"] }) }, {
+    discordMuteDuringDictation: true, discordDeafenDuringDictation: true, unsupported: false
+  });
+  const ctrlClick = { ...requested, discordActivationMode: "ctrl-click" };
+  assert.deepEqual({ ...api.discordPreferences(ctrlClick, { capabilities: ["discordMute", "discordDeafen"] }, { discordCtrlClick: false }) }, {
+    discordMuteDuringDictation: false, discordDeafenDuringDictation: false, unsupported: false
+  });
+  assert.deepEqual({ ...api.discordPreferences(ctrlClick, { capabilities: ["discordMute", "discordDeafen"] }, { discordCtrlClick: true }) }, {
+    discordMuteDuringDictation: true, discordDeafenDuringDictation: true, unsupported: false
+  });
+  assert.deepEqual({ ...api.discordPreferences({ ...ctrlClick, discordDeafenDuringDictation: false }, { capabilities: ["discordMute"] }, { discordCtrlClick: true }) }, {
+    discordMuteDuringDictation: true, discordDeafenDuringDictation: false, unsupported: false
+  });
+  assert.deepEqual({ ...api.discordPreferences({ ...ctrlClick, discordMuteDuringDictation: false }, { capabilities: ["discordDeafen"] }, { discordCtrlClick: true }) }, {
+    discordMuteDuringDictation: false, discordDeafenDuringDictation: true, unsupported: false
+  });
+});
+
 test("pairing stores a fresh token and removes the code from the address", async () => {
   const { api, values, calls } = context();
   const win = { location: { href: "http://127.0.0.1:48731/pair#" + "ab".repeat(32), hash: "#" + "ab".repeat(32), pathname: "/pair", search: "" }, history: { replaceState: (_a, _b, url) => { win.cleanedUrl = url; } } };

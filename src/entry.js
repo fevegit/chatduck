@@ -3,6 +3,7 @@
 
   const core = root.AudioDuckCore;
   const { MediaController } = root.AudioDuckMedia;
+  const { TabAudioFallback } = root.AudioDuckTabAudio;
   const MAX_HEARTBEAT_AGE = 150_000;
   const SESSION_MAX_AGE = 3 * 60 * 60 * 1000;
   const monotonicNow = () => window.performance?.now?.() ?? Date.now();
@@ -12,25 +13,28 @@
   let settings = core.normalizeSettings(GM_getValue("settings", core.DEFAULTS));
   let tabObject = null;
   let tabId = "";
+  let frameId = "";
   let chatState = { recognized: isChatGPT, active: false, kind: null };
   let agentState = { ok: false, error: "Conectando…" };
+  let agentStatusUpdatedAt = 0;
+  let lastAgentStatusRoundTripMs = null;
+  let pendingNativeBegin = Promise.resolve();
   let currentSession = null;
   let detector = null;
   let settingsPage = null;
   let mediaController = null;
+  let tabAudioFallback = null;
   let mediaObserver = null;
-  let mediaScanTimer = 0;
-  let statusTimer = 0;
   let heartbeatTimer = 0;
   let staleCheckTimer = 0;
   let lastUrl = location.href;
   let agentStatusTimer = 0;
   let restoringPending = false;
   let lastRestoreTrace = null;
+  let lastError = "";
   let menuCommandId = null;
   let menuLanguage = "";
   const detectorSessions = new Map();
-  let testRestoreTimer = 0;
 
   function randomId() {
     try { return crypto.randomUUID(); } catch (_) { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
@@ -53,15 +57,38 @@
     catch (_) { return host; }
   }
 
+  function frameState() { return tabObject?.audioDucking?.frames?.[frameId] || tabObject?.audioDucking || {}; }
+
+  async function refreshTabObject() {
+    return new Promise((resolve) => GM_getTab((latest) => { tabObject = latest || tabObject || {}; resolve(tabObject); }));
+  }
+
+  function webParentHosts() {
+    if (window.top === window) return [];
+    const frames = tabObject?.audioDucking?.frames || {};
+    const topFrame = Object.values(frames).find((frame) => frame?.isTop && frame.running !== false);
+    return topFrame?.host ? [topFrame.host] : null;
+  }
+
+  function shouldManageCurrentWeb() {
+    const parents = webParentHosts();
+    return parents !== null && core.shouldManageWeb(location.href, settings, parents);
+  }
+
   function saveTabData(patch = {}) {
     if (!tabObject || !tabId) return;
-    const prior = tabObject.audioDucking || {};
-    tabObject.audioDucking = { ...prior, ...patch };
-    GM_saveTab(tabObject);
+    GM_getTab((latest) => {
+      tabObject = latest || tabObject;
+      const current = tabObject.audioDucking || {};
+      const frame = { ...(current.frames?.[frameId] || {}), ...patch };
+      tabObject.audioDucking = { ...current, ...patch, frames: { ...(current.frames || {}), [frameId]: frame } };
+      GM_saveTab(tabObject);
+    });
   }
 
   function addError(error) {
     const message = String(error?.message || error || "Error desconocido").replace(/[\r\n]+/g, " ").slice(0, 220);
+    lastError = message;
     const entry = `${host || "página"}: ${message}`;
     const errors = [...(Array.isArray(GM_getValue("errors", [])) ? GM_getValue("errors", []) : []), entry].slice(-12);
     GM_setValue("errors", errors);
@@ -71,15 +98,17 @@
   function currentStatus() {
     const media = mediaController?.status() || { playingCount: 0, touchedCount: 0, pausedCount: 0, duckedCount: 0 };
     return {
-      tabId,
+      tabId: `${tabId}:${frameId}`,
       host,
+      isTop: window.top === window,
+      excluded: core.isExcluded(host, settings.excludedDomains),
       isChatGPT,
       running: true,
       lastSeen: Date.now(),
       recognized: chatState.recognized,
       dictationActive: chatState.active,
       kind: chatState.kind,
-      htmlMediaCount: document.querySelectorAll("audio,video").length,
+      htmlMediaCount: mediaController?.records?.size || 0,
       playingCount: media.playingCount,
       touchedCount: media.touchedCount,
       pausedCount: media.pausedCount,
@@ -88,24 +117,119 @@
       fallbackPausedCount: media.fallbackPausedCount,
       unsupportedCount: media.unsupportedCount,
       appliedVolumePercentRange: media.appliedVolumePercentRange,
-      lastRestore: tabObject?.audioDucking?.lastRestore || null,
-      error: ""
+      tabAudioFallback: tabAudioFallback?.status() || null,
+      lastRestore: frameState().lastRestore || null,
+      error: lastError
     };
   }
 
   function publishStatus() { saveTabData(currentStatus()); }
 
-  function beginWebSession(state) {
+  function beginWebSession(state, pendingActions = []) {
     if (!mediaController) return Promise.resolve(null);
-    const key = core.webPlayerKeyFor(location.href, settings);
-    const playerSettings = core.resolvePlayerRule(settings, key);
-    return mediaController.begin({ ...state, settings: { ...state.settings, ...playerSettings } });
+    const playerSettings = core.resolveWebsiteOverride(settings, location.href);
+    if (!playerSettings.enabled) return mediaController.sessionId ? mediaController.restore(mediaController.sessionId) : Promise.resolve(null);
+    return mediaController.begin({ ...state, settings: { ...state.settings, ...playerSettings } }, pendingActions);
   }
 
   function allTabStates() {
     return new Promise((resolve) => {
-      GM_getTabs((tabs) => resolve(Object.values(tabs || {}).map((tab) => tab?.audioDucking).filter(Boolean)));
+      GM_getTabs((tabs) => resolve(Object.values(tabs || {}).flatMap((tab) => {
+        const state = tab?.audioDucking;
+        return state?.frames ? Object.values(state.frames) : state ? [state] : [];
+      })));
     });
+  }
+
+  async function diagnosticReport(requestId) {
+    const session = getSession();
+    const effective = core.resolveWebsiteOverride(settings, location.href);
+    const elements = root.AudioDuckMedia.collectMediaElements(document);
+    let iframeCount = 0, tabAudioState = null;
+    try { iframeCount = document.querySelectorAll("iframe").length; } catch (_) {}
+    try {
+      if (typeof GM_audio !== "undefined" && GM_audio?.getState) {
+        const audioState = tabAudioFallback?.getState ? await tabAudioFallback.getState() : await new Promise((resolve, reject) => GM_audio.getState((value) => value ? resolve(value) : reject(new Error("unavailable"))));
+        tabAudioState = {
+          available: true, isAudible: audioState.isAudible === true, isMuted: audioState.isMuted === true,
+          muteReason: ["user", "capture", "extension"].includes(audioState.muteReason) ? audioState.muteReason : audioState.muteReason ? "other" : ""
+        };
+      }
+    } catch (_) { tabAudioState = { available: false, isAudible: null, isMuted: null, muteReason: "" }; }
+    const excluded = core.isExcluded(host, settings.excludedDomains) || (webParentHosts() || []).some((parent) => core.isExcluded(parent, settings.excludedDomains));
+    const eligible = shouldManageCurrentWeb();
+    const activeSession = sessionFresh(session);
+    const players = mediaController?.diagnostics(elements) || elements.map((element) => ({
+      id: null,
+      mediaType: element.tagName?.toLowerCase() || "media",
+      origin: (() => { try { return new URL(element.currentSrc || element.src || location.href).origin; } catch (_) { return ""; } })(),
+      action: "detected",
+      playing: !element.paused && !element.ended,
+      paused: Boolean(element.paused),
+      ended: Boolean(element.ended),
+      readyState: Number(element.readyState) || 0,
+      originalVolumePercent: null,
+      targetVolumePercent: null,
+      appliedVolumePercent: null,
+      currentVolumePercent: Number.isFinite(Number(element.volume)) ? Math.round(Number(element.volume) * 100) : null,
+      transitionState: "idle",
+      manualOverride: false,
+      fallbackUsed: false,
+      reason: element.paused ? "not-playing" : "not-controlled"
+    }));
+    const playing = players.filter((player) => player.playing).length;
+    const controlled = players.filter((player) => ["duck", "pause"].includes(player.action)).length;
+    let status = "ready";
+    if (excluded) status = "excluded";
+    else if (!settings.enabled || !settings.webIntegration || !settings.universalWebControl || !eligible) status = "disabled-or-protected";
+    else if (!activeSession) status = "waiting-for-dictation-session";
+    else if (mediaController?.sessionId !== session.id) status = "session-not-received";
+    else if (!players.length && tabAudioState?.isAudible) status = "audio-detected-not-controllable";
+    else if (!players.length) status = "no-html-media-detected";
+    else if (!playing) status = "no-playing-media";
+    else if (!controlled) status = "media-not-controllable";
+    else if (players.some((player) => player.action === "unsupported")) status = "partial-control";
+    return {
+      requestId,
+      version: String(root.GM_info?.script?.version || "unknown").slice(0, 32),
+      host,
+      isTop: window.top === window,
+      isChatGPT,
+      registered: true,
+      eligible,
+      excluded,
+      status,
+      dictationActive: isChatGPT ? chatState.active : null,
+      sessionActive: activeSession,
+      sessionReceived: Boolean(activeSession && mediaController?.sessionId === session.id),
+      globalMode: settings.mode,
+      effectiveMode: effective.mode,
+      targetVolumePercent: effective.targetVolumePercent,
+      htmlMediaCount: elements.length,
+      iframeCount,
+      audioDetected: Boolean(playing || tabAudioState?.isAudible),
+      playingCount: playing,
+      controlledCount: controlled,
+      players,
+      fallbackToPause: settings.fallbackToPause,
+      webAudioMuteFallback: settings.webAudioMuteFallback,
+      fallbackDisabled: settings.mode === "duck" && !settings.fallbackToPause && !settings.webAudioMuteFallback,
+      tabAudioState,
+      tabAudioFallback: tabAudioFallback?.status() || null,
+      lastRestore: frameState().lastRestore || null,
+      error: lastError
+    };
+  }
+
+  function requestDiagnostics() {
+    const requestId = randomId();
+    GM_setValue("diagnosticRequest", { id: requestId, requestedAt: Date.now() });
+    return new Promise((resolve) => setTimeout(async () => {
+      const frames = await allTabStates();
+      resolve(frames.map((frame) => frame.diagnosticRequestId === requestId && frame.diagnosticReport
+        ? frame.diagnosticReport
+        : { host: frame.host || "", isChatGPT: Boolean(frame.isChatGPT), registered: Boolean(frame.running), status: "no-diagnostic-response", error: frame.error || "" }));
+    }, 700));
   }
 
   function watchWebRestore(eventId, detectedAt) {
@@ -126,47 +250,84 @@
   }
 
   function createMediaController(force = false) {
-    if (mediaController || (!force && !core.shouldManageWeb(location.href, settings)) || isChatGPT) return;
+    if (mediaController || (!force && !shouldManageCurrentWeb()) || isChatGPT) return;
     mediaController = new MediaController({
-      getElements: () => [...document.querySelectorAll("audio,video")],
+      getElements: () => root.AudioDuckMedia.collectMediaElements(document),
       locationHref: () => location.href,
       tabId,
       getSettings: () => settings,
       onChange: publishStatus,
       onError: addError,
-      persist: (actions) => {
-        if (actions.length) saveTabData({ pendingActions: actions, pendingPageKey: pageKey(), pendingAt: Date.now() });
-      }
+      persist: (actions) => saveTabData({
+        pendingActions: actions,
+        pendingPageKey: actions.length ? pageKey() : "",
+        pendingAt: actions.length ? Date.now() : 0
+      })
     });
+    let listenerScheduled = false;
     const listener = () => {
-      if (!core.shouldManageWeb(location.href, settings)) return;
-      const active = getSession();
-      if (active?.phase === "active" && sessionFresh(active)) beginWebSession(active).catch(addError);
+      if (!shouldManageCurrentWeb()) return;
+      if (listenerScheduled) return;
+      listenerScheduled = true;
+      queueMicrotask(() => {
+        listenerScheduled = false;
+        const active = getSession();
+        if (active?.phase === "active" && sessionFresh(active)) beginWebSession(active).catch(addError);
+      });
     };
-    document.addEventListener("play", listener, true);
-    mediaObserver = new MutationObserver(() => {
-      listener();
-      tryRestorePending().catch(addError);
-    });
-    const observe = () => {
-      const target = document.documentElement || document;
+    const observedRoots = new WeakSet();
+    const observeRoot = (target) => {
+      if (!target || observedRoots.has(target)) return;
+      observedRoots.add(target);
+      target.addEventListener("play", listener, true);
       try { mediaObserver.observe(target, { subtree: true, childList: true }); } catch (_) {}
+      const pending = target.nodeType === 1 ? [target] : [...(target.children || [])];
+      while (pending.length) {
+        const hostNode = pending.pop();
+        if (hostNode.shadowRoot) observeRoot(hostNode.shadowRoot);
+        for (let child = hostNode.lastElementChild; child; child = child.previousElementSibling) pending.push(child);
+      }
     };
-    observe();
-    mediaScanTimer = setInterval(() => { listener(); tryRestorePending().catch(addError); }, 1500);
+    mediaObserver = new MutationObserver((mutations) => {
+      if (location.href !== lastUrl) checkUrl();
+      const inspected = new WeakSet();
+      let mediaAdded = false;
+      for (const mutation of mutations) for (const node of mutation.addedNodes) {
+        if (!node || node.nodeType !== 1 || inspected.has(node)) continue;
+        const pending = [node];
+        while (pending.length) {
+          const candidate = pending.pop();
+          if (inspected.has(candidate)) continue;
+          inspected.add(candidate);
+          if (candidate.matches?.("audio,video")) mediaAdded = true;
+          if (candidate.shadowRoot) observeRoot(candidate.shadowRoot);
+          for (let child = candidate.lastElementChild; child; child = child.previousElementSibling) pending.push(child);
+        }
+      }
+      if (mediaAdded) listener();
+    });
+    observeRoot(document);
+    if (root.AudioDuckMedia.collectMediaElements(document).some((element) => !element.paused && !element.ended)) listener();
   }
 
   async function reconcileMediaController() {
     if (isChatGPT) return;
-    const eligible = core.shouldManageWeb(location.href, settings);
-    const pending = tabObject?.audioDucking?.pendingActions?.length > 0;
+    await refreshTabObject();
+    const eligible = shouldManageCurrentWeb();
+    const pendingActions = frameState().pendingActions || [];
+    const pending = pendingActions.length > 0;
     if (!mediaController && (eligible || pending)) createMediaController(Boolean(pending));
     if (!mediaController) return;
 
     const session = getSession();
-    if (eligible && sessionFresh(session)) await beginWebSession(session);
+    if (eligible && sessionFresh(session)) {
+      await beginWebSession(session, pendingActions.filter((action) => action.mode === "duck"));
+      if (tabAudioFallback) await tabAudioFallback.begin(session.id);
+    }
     else if (mediaController.sessionId) await mediaController.restore(mediaController.sessionId);
-    if (pending) await tryRestorePending();
+    if (tabAudioFallback?.sessionId && (!eligible || !sessionFresh(session) || !settings.webAudioMuteFallback))
+      await tabAudioFallback.restore(tabAudioFallback.sessionId);
+    if (pending && !(eligible && sessionFresh(session))) await tryRestorePending(pendingActions);
     publishStatus();
   }
 
@@ -178,7 +339,7 @@
 
   async function restoreSavedActions(actions) {
     if (!mediaController || !Array.isArray(actions) || !actions.length || restoringPending) return [];
-    const saved = tabObject?.audioDucking || {};
+    const saved = frameState();
     if (saved.pendingPageKey && saved.pendingPageKey !== pageKey()) return [];
     restoringPending = true;
     try {
@@ -186,9 +347,8 @@
     } finally { restoringPending = false; }
   }
 
-  async function tryRestorePending() {
-    const saved = tabObject?.audioDucking || {};
-    const actions = saved.pendingActions;
+  async function tryRestorePending(actions = frameState().pendingActions) {
+    const saved = frameState();
     if (!actions?.length || Date.now() - Number(saved.pendingAt || 0) > 10 * 60 * 1000) return;
     const session = getSession();
     if (sessionFresh(session) && actions.some((action) => action.sessionId === session.id)) return;
@@ -202,24 +362,27 @@
   async function applySessionState(state) {
     if (!state || isChatGPT) return;
     if (state.phase === "active" && sessionFresh(state)) {
-      if (!core.shouldManageWeb(location.href, settings)) {
+      await refreshTabObject();
+      if (!shouldManageCurrentWeb()) {
         if (mediaController?.sessionId) await mediaController.restore(mediaController.sessionId);
+        if (tabAudioFallback?.sessionId) await tabAudioFallback.restore(tabAudioFallback.sessionId);
         publishStatus();
         return;
       }
       if (!mediaController) createMediaController();
       if (!mediaController) return;
-      const saved = tabObject?.audioDucking || {};
-      if (saved.pendingActions?.length && saved.pendingActions.some((action) => action.sessionId !== state.id)) {
-        await tryRestorePending();
-      }
-      await beginWebSession(state);
+      const pendingActions = frameState().pendingActions || [];
+      const staleActions = pendingActions.filter((action) => action.sessionId !== state.id && action.mode !== "duck");
+      if (staleActions.length) await tryRestorePending(staleActions);
+      await beginWebSession(state, pendingActions.filter((action) => action.mode === "duck"));
+      if (tabAudioFallback) await tabAudioFallback.begin(state.id);
       publishStatus();
     } else if (state.phase === "restore") {
       const startedAt = monotonicNow();
       let restoredCount = 0;
       let applied = false;
-      const saved = tabObject?.audioDucking || {};
+      if (tabAudioFallback) await tabAudioFallback.restore(state.sessionId || null);
+      const saved = frameState();
       if (!mediaController && saved.pendingActions?.length) createMediaController(true);
       if (mediaController && (state.force || !state.sessionId || mediaController.sessionId === state.sessionId)) {
         restoredCount += (await mediaController.restore(state.force ? null : state.sessionId || null)).length;
@@ -232,7 +395,11 @@
         applied = true;
       }
       if (applied) {
-        saveTabData({ lastRestore: { sessionId: state.sessionId || "", eventId: state.eventId || null, durationMs: monotonicNow() - startedAt, restoredCount } });
+        const outcome = mediaController?.lastRestore || null;
+        saveTabData({ lastRestore: {
+          sessionId: state.sessionId || "", eventId: state.eventId || null, durationMs: monotonicNow() - startedAt,
+          restoredCount, verified: outcome?.verified === true, errorCount: outcome?.errorCount || 0
+        } });
       }
       publishStatus();
     }
@@ -244,8 +411,12 @@
     try {
       const result = await root.AudioDuckAgent.request({ command, ...values }, command === "status" ? 600 : command === "heartbeat" ? 400 : 1800);
       const roundTripMs = monotonicNow() - startedAt;
+      if (command === "status") {
+        agentStatusUpdatedAt = monotonicNow();
+        lastAgentStatusRoundTripMs = roundTripMs;
+      }
       const lastControl = ["begin", "restore", "restore-all"].includes(command)
-        ? { command, sessionId: values.sessionId || result.correlationId || "", roundTripMs, elapsedMs: result.durationMs ?? null }
+        ? { command, sessionId: values.sessionId || result.correlationId || "", roundTripMs, elapsedMs: result.durationMs ?? null, timing: result.timing || null, discordTiming: result.discordTiming || null }
         : agentState.lastControl;
       agentState = { ok: result.ok !== false, ...result, lastControl, error: result.error || "" };
       if (command === "restore" && lastRestoreTrace?.sessionId === values.sessionId) {
@@ -259,31 +430,52 @@
     }
   }
 
-  async function startGlobalSession(kind = "dictation", test = false, detectorEventId = null, includeNative = false) {
+  async function startGlobalSession(kind = "dictation", detectorEventId = null, includeNative = false, discordCtrlClick = false, clickToDetectionMs = null) {
     if (!settings.enabled) return null;
     const previous = getSession();
     if (sessionFresh(previous)) {
-      if (!test && previous.test && previous.kind === "test") await restoreGlobal(previous.id, "recording-started");
-      else {
-        if (detectorEventId) detectorSessions.set(detectorEventId, previous.id);
-        return previous;
-      }
+      if (detectorEventId) detectorSessions.set(detectorEventId, previous.id);
+      return previous;
     }
     const now = Date.now();
     const session = {
-      id: randomId(), phase: "active", kind, test, includeNative, ownerTabId: tabId,
+      id: randomId(), phase: "active", kind, includeNative, ownerTabId: tabId, discordCtrlClick: discordCtrlClick === true,
+      clickToDetectionMs: Number.isFinite(clickToDetectionMs) ? clickToDetectionMs : null,
       startedAt: now, heartbeatAt: now, settings: { ...settings }
     };
     currentSession = session;
     if (detectorEventId) detectorSessions.set(detectorEventId, session.id);
     GM_setValue("session", session);
-    if (isChatGPT || includeNative) void nativeCommand("begin", { sessionId: session.id, settings });
-    if (test) {
-      clearTimeout(testRestoreTimer);
-      testRestoreTimer = setTimeout(() => {
-        const current = getSession();
-        if (current?.id === session.id && current.phase === "active") restoreGlobal(session.id, "test-timeout");
-      }, 15_000);
+    if (isChatGPT || includeNative) {
+      const requested = { ...settings };
+      const discordActivated = (requested.discordActivationMode !== "ctrl-click" || session.discordCtrlClick) && (requested.discordMuteDuringDictation || requested.discordDeafenDuringDictation);
+      const cachedStatusFresh = agentState.ok && Array.isArray(agentState.capabilities) && monotonicNow() - agentStatusUpdatedAt < 10_000;
+      const requestedStatusRoundTripMs = discordActivated && !cachedStatusFresh;
+      if (requestedStatusRoundTripMs) lastAgentStatusRoundTripMs = null;
+      const statusRequest = requestedStatusRoundTripMs ? nativeCommand("status") : Promise.resolve(agentState);
+      pendingNativeBegin = statusRequest.then((status) => {
+        if (getSession()?.id !== session.id || !sessionFresh(getSession())) return null;
+        const discord = root.AudioDuckAgent.discordPreferences(requested, status, { discordCtrlClick: session.discordCtrlClick });
+        if (discord.unsupported) {
+          agentState = { ...agentState, ok: true, discordUnsupported: true };
+          publishStatus();
+        }
+        return nativeCommand("begin", { sessionId: session.id, settings: { ...requested, discordMuteDuringDictation: discord.discordMuteDuringDictation, discordDeafenDuringDictation: discord.discordDeafenDuringDictation, discord: { enabled: false, mode: "mute" } } }).then((result) => {
+          if (getSession()?.id === session.id && result) {
+            const activationTiming = {
+              clickToDetectionMs: session.clickToDetectionMs,
+              statusRoundTripMs: requestedStatusRoundTripMs ? lastAgentStatusRoundTripMs : null,
+              beginRoundTripMs: agentState.lastControl?.roundTripMs ?? null,
+              beginAgentMs: agentState.lastControl?.elapsedMs ?? null,
+              discord: result.discordTiming || null
+            };
+            agentState = { ...agentState, lastControl: { ...agentState.lastControl, activationTiming } };
+            console.debug("[ChatDuck] Discord activation timings", activationTiming);
+            publishStatus();
+          }
+          return result;
+        });
+      }).catch(() => null);
     }
     publishStatus();
     return session;
@@ -291,6 +483,8 @@
 
   async function restoreGlobal(sessionId = null, reason = "manual", endEvent = null) {
     const current = getSession();
+    if (sessionId && current?.phase === "active" && current.id !== sessionId) return;
+    if (sessionId && current?.phase === "restore" && current.sessionId === sessionId) return;
     const activeId = sessionId || (current?.phase === "active" ? current.id : null);
     const id = activeId || current?.sessionId || randomId();
     if (isChatGPT && detector?.current && reason !== "recording-started") {
@@ -316,9 +510,9 @@
     lastRestoreTrace = { ...lastRestoreTrace, broadcastCallMs: monotonicNow() - publishStarted };
     if (isChatGPT && traceId && endEvent?.detectedAt != null) watchWebRestore(traceId, endEvent.detectedAt);
     currentSession = null;
-    clearTimeout(testRestoreTimer);
     if (isChatGPT || current?.includeNative) {
-      await nativeCommand(activeId ? "restore" : "restore-all", { sessionId: id, reason });
+    await pendingNativeBegin;
+    await nativeCommand(activeId ? "restore" : "restore-all", { sessionId: id, reason });
     }
     publishStatus();
   }
@@ -328,6 +522,7 @@
     GM_setValue("settings", settings);
     registerSettingsMenu();
     await renderSettingsPage();
+    if (!isChatGPT) await reconcileMediaController();
     if (!settings.enabled) {
       detector?.finish("extension-disabled");
       const active = getSession();
@@ -345,14 +540,19 @@
       getSettings: () => settings,
       onStart: (event) => {
         chatState = { recognized: true, active: true, kind: event.kind, source: event.source };
-        startGlobalSession(event.kind, false, event.id).catch(addError);
+        startGlobalSession(event.kind, event.id, false, event.discordCtrlClick === true, event.clickToDetectionMs).catch(addError);
         publishStatus();
       },
       onStop: (event) => {
         chatState = { recognized: true, active: false, kind: null };
         const sessionId = detectorSessions.get(event.id);
         detectorSessions.delete(event.id);
-        restoreGlobal(sessionId || null, event.reason, event).catch(addError);
+        if (!sessionId) {
+          console.warn("[ChatDuck] ignored unmatched dictation stop", { eventId: event.id, reason: event.reason });
+          publishStatus();
+          return;
+        }
+        restoreGlobal(sessionId, event.reason, event).catch(addError);
         publishStatus();
       },
       onState: (state) => {
@@ -362,8 +562,10 @@
       onError: addError
     }).start();
 
-    nativeCommand("status").catch(addError);
-    agentStatusTimer = setInterval(() => nativeCommand("status"), 5000);
+    if (isChatGPT) {
+      nativeCommand("status").catch(addError);
+      agentStatusTimer = setInterval(() => nativeCommand("status"), 5000);
+    }
   }
 
   async function renderSettingsPage() {
@@ -390,6 +592,7 @@
         const active = getSession();
         return { sessionActive: sessionFresh(active), apps: detectedApps, agent: agentState };
       },
+      getDiagnostics: requestDiagnostics,
       prepareSites: (domains) => root.AudioDuckAgent.request({ command: "prepare-sites", domains }),
       validateAppPath: (path) => root.AudioDuckAgent.request({ command: "validate-app", path }),
       setAutostart: (enabled) => root.AudioDuckAgent.request({ command: "set-autostart", enabled }),
@@ -409,7 +612,36 @@
     });
     tabObject = loadedTab;
     tabId = tabObject.audioDuckingId;
-    const saved = tabObject.audioDucking || {};
+    frameId = randomId();
+    const saved = frameState();
+
+    if (!isChatGPT && !isSettingsPage && window.top === window && typeof GM_audio !== "undefined") {
+      tabAudioFallback = new TabAudioFallback({
+        audio: GM_audio,
+        enabled: () => settings.enabled && settings.webIntegration && settings.universalWebControl && settings.webAudioMuteFallback && shouldManageCurrentWeb(),
+        hasMediaOrFrame: () => Boolean(document.querySelector("iframe") || root.AudioDuckMedia.collectMediaElements(document).length),
+        getPending: () => tabObject?.audioDucking?.tabAudioPending || null,
+        persist: (snapshot) => new Promise((resolve) => {
+          GM_getTab((latest) => {
+            const tab = latest || tabObject || {};
+            const current = tab.audioDucking || {};
+            tab.audioDucking = { ...current, tabAudioPending: snapshot };
+            GM_saveTab(tab, () => { tabObject = tab; resolve(); });
+          });
+        }),
+        onChange: publishStatus
+      });
+      document.addEventListener("play", () => {
+        if (tabAudioFallback?.snapshot) tabAudioFallback.restore(tabAudioFallback.sessionId).catch(addError);
+      }, true);
+      const safetyObserver = new MutationObserver((mutations) => {
+        if (!tabAudioFallback?.snapshot) return;
+        const unsafeAddition = mutations.some(({ addedNodes }) => [...addedNodes].some((node) => node.nodeType === 1 &&
+          (node.matches?.("iframe,audio,video") || node.querySelector?.("iframe,audio,video") || root.AudioDuckMedia.collectMediaElements(node).length)));
+        if (unsafeAddition) tabAudioFallback.restore(tabAudioFallback.sessionId).catch(addError);
+      });
+      safetyObserver.observe(document, { childList: true, subtree: true });
+    }
 
     if (isSettingsPage) initSettingsPage();
     else if (isChatGPT) initChatGPT();
@@ -420,6 +652,10 @@
     GM_addValueChangeListener("session", (_key, _oldValue, newValue) => {
       applySessionState(newValue).catch(addError);
       renderSettingsPage().catch(addError);
+    });
+    GM_addValueChangeListener("diagnosticRequest", (_key, _oldValue, request) => {
+      if (!request?.id || Date.now() - Number(request.requestedAt || 0) > 5000) return;
+      diagnosticReport(request.id).then((report) => saveTabData({ diagnosticRequestId: request.id, diagnosticReport: report })).catch(addError);
     });
     GM_addValueChangeListener("settings", (_key, _oldValue, newValue) => {
       settings = core.normalizeSettings(newValue);
@@ -444,7 +680,10 @@
     } else if (current?.phase === "active") {
       await applySessionState(current);
       if (isChatGPT && current.ownerTabId === tabId) currentSession = current;
-    } else if (saved.pendingActions?.length) tryRestorePending().catch(addError);
+    } else {
+      if (tabAudioFallback?.snapshot) await tabAudioFallback.restore();
+      if (saved.pendingActions?.length) tryRestorePending().catch(addError);
+    }
 
     heartbeatTimer = setInterval(() => {
       const session = getSession();
@@ -457,16 +696,15 @@
       const session = getSession();
       if (session?.phase === "active" && !sessionFresh(session)) restoreGlobal(session.id, "session-heartbeat-expired").catch(addError);
     }, 15_000);
-    statusTimer = setInterval(publishStatus, 2000);
 
     window.addEventListener("pagehide", () => {
       saveTabData({ running: false, lastSeen: Date.now(), pendingActions: mediaController?.snapshot() || saved.pendingActions || [] });
       detector?.dispose();
       settingsPage?.dispose();
+      tabAudioFallback?.dispose();
     }, { once: true });
     window.addEventListener("popstate", checkUrl);
     window.addEventListener("hashchange", checkUrl);
-    setInterval(checkUrl, 800);
   }
 
   function checkUrl() {

@@ -22,16 +22,40 @@ internal static class AgentProtocol
         catch (FormatException) { return false; }
     }
 
-    public static Task RequestPairingAsync(string token) => RequestCommandAsync(token, "pair");
+    public static Task RequestPairingAsync(string token, int port = 48731) => RequestCommandAsync(token, "pair", port);
 
-    public static async Task RequestCommandAsync(string token, string command)
+    public static async Task<JsonDocument> RequestStatusAsync(string token, int port = 48731)
+    {
+        const string path = "/v1/command";
+        const string body = "{\"command\":\"status\"}";
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var nonce = Base64Url(RandomNumberGenerator.GetBytes(16));
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{port}{path}")
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json")
+        };
+        request.Headers.TryAddWithoutValidation("X-Audio-Ducking-Timestamp", timestamp);
+        request.Headers.TryAddWithoutValidation("X-Audio-Ducking-Nonce", nonce);
+        request.Headers.TryAddWithoutValidation("X-Audio-Ducking-Signature", Sign(token, $"req\nPOST\n{path}\n{timestamp}\n{nonce}\n{body}"));
+        using var response = await client.SendAsync(request);
+        var text = await response.Content.ReadAsStringAsync();
+        var responseNonce = response.Headers.TryGetValues("X-Audio-Ducking-Response-Nonce", out var nonceValues) ? nonceValues.SingleOrDefault() : null;
+        var responseSignature = response.Headers.TryGetValues("X-Audio-Ducking-Response-Signature", out var signatureValues) ? signatureValues.SingleOrDefault() : null;
+        if (responseNonce != nonce || responseSignature is null || !Verify(token, $"resp\n{(int)response.StatusCode}\n{nonce}\n{text}", responseSignature))
+            throw new InvalidOperationException("No se pudo autenticar el estado del agente activo.");
+        if (!response.IsSuccessStatusCode) throw new InvalidOperationException("El agente rechazó la consulta de estado.");
+        return JsonDocument.Parse(text);
+    }
+
+    public static async Task RequestCommandAsync(string token, string command, int port = 48731)
     {
         const string path = "/v1/command";
         var body = JsonSerializer.Serialize(new { command });
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
         var nonce = Base64Url(RandomNumberGenerator.GetBytes(16));
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:48731{path}")
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{port}{path}")
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json")
         };
@@ -47,10 +71,10 @@ internal static class AgentProtocol
         if (!response.IsSuccessStatusCode) throw new InvalidOperationException("No se pudo iniciar el emparejamiento del agente.");
     }
 
-    public static async Task RequestLegacyShutdownAsync(string token)
+    public static async Task RequestLegacyShutdownAsync(string token, int port = 48731)
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-        using var request = new HttpRequestMessage(HttpMethod.Post, "http://127.0.0.1:48731/v1/command")
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{port}/v1/command")
         {
             Content = new StringContent("{\"command\":\"shutdown\"}", Encoding.UTF8, "application/json")
         };

@@ -2,11 +2,23 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const core = require("../src/core.js");
 
-test("defaults to supported players with individual toggles and safe Windows selection", () => {
+test("defaults to universal web media and safe Windows selection", () => {
   const settings = core.normalizeSettings();
-  assert.equal(settings.mode, "pause");
+  assert.equal(settings.mode, "duck");
   assert.equal(settings.webIntegration, true);
-  assert.deepEqual(settings.webPlatforms, { youtube: true, youtubeMusic: true, spotifyWeb: true, twitch: true, plexWeb: true, otherCompatible: false });
+  assert.equal(settings.universalWebControl, true);
+  assert.equal(settings.webAudioMuteFallback, false);
+  assert.equal(settings.discordMuteDuringDictation, false);
+  assert.equal(settings.discordDeafenDuringDictation, false);
+  assert.equal(settings.discordActivationMode, "automatic");
+  assert.equal(core.normalizeSettings({ discordActivationMode: "ctrl-click" }).discordActivationMode, "ctrl-click");
+  assert.equal(core.normalizeSettings({ discordActivationMode: "invalid" }).discordActivationMode, "automatic");
+  assert.equal(core.normalizeSettings({ discordMuteDuringDictation: true }).discordMuteDuringDictation, true);
+  assert.equal(core.normalizeSettings({ discordMuteDuringDictation: "true" }).discordMuteDuringDictation, false);
+  assert.equal(core.normalizeSettings({ discordDeafenDuringDictation: true }).discordDeafenDuringDictation, true);
+  assert.equal(core.normalizeSettings({ discordDeafenDuringDictation: "true" }).discordDeafenDuringDictation, false);
+  assert.equal(settings.fallbackToPause, false);
+  assert.equal(settings.fallbackDucking, false);
   assert.deepEqual(settings.plexOrigins, []);
   assert.deepEqual(settings.playerRules, {});
   assert.equal(settings.targetVolumePercent, 10);
@@ -19,6 +31,21 @@ test("defaults to supported players with individual toggles and safe Windows sel
   for (const url of ["https://www.youtube.com/watch?v=1", "https://music.youtube.com/watch?v=1", "https://open.spotify.com/track/1", "https://twitch.tv/channel", "https://app.plex.tv/"]) {
     assert.equal(core.shouldManageWeb(url, settings), true);
   }
+  assert.equal(core.shouldManageWeb("https://unknown-player.example/", settings), true);
+  assert.equal(core.shouldManageWeb("https://discord.com/channels/1/2", settings), false);
+});
+
+test("new installs default to Ducking while an existing explicit Pause preference is preserved", () => {
+  assert.equal(core.normalizeSettings({}).mode, "duck");
+  assert.equal(core.normalizeSettings({ mode: "pause" }).mode, "pause");
+  assert.equal(core.normalizeSettings({ mode: "duck" }).mode, "duck");
+});
+
+test("media fallbacks are opt-in, retain explicit preferences, and survive web-control toggles", () => {
+  assert.equal(core.normalizeSettings({}).fallbackDucking, false);
+  assert.equal(core.normalizeSettings({}).fallbackToPause, false);
+  assert.equal(core.normalizeSettings({ fallbackDucking: true, fallbackToPause: true, universalWebControl: false }).fallbackDucking, true);
+  assert.equal(core.normalizeSettings({ fallbackDucking: true, fallbackToPause: true, universalWebControl: false }).fallbackToPause, true);
 });
 
 test("normalizes percentages, fade bounds, and excluded domains", () => {
@@ -28,6 +55,12 @@ test("normalizes percentages, fade bounds, and excluded domains", () => {
   assert.equal(settings.fadeOutMs, 0);
   assert.equal(settings.fadeInMs, 1500);
   assert.equal(settings.excludedDomains, "example.com");
+  assert.equal(core.normalizeSettings({ excludedDomains: "http://Media.Example.com/watch" }).excludedDomains, "media.example.com");
+});
+
+test("Web Audio tab-mute fallback is opt-in and normalized strictly", () => {
+  assert.equal(core.normalizeSettings({ webAudioMuteFallback: true }).webAudioMuteFallback, true);
+  assert.equal(core.normalizeSettings({ webAudioMuteFallback: "true" }).webAudioMuteFallback, false);
 });
 
 test("YouTube and Spotify Web can be enabled independently", () => {
@@ -51,7 +84,8 @@ test("validates custom sites and uses boundary-safe domain matches", () => {
     customSites: [{ domain: "example.com", enabled: true }]
   });
   assert.equal(core.shouldManageWeb("https://media.example.com/player", settings), true);
-  assert.equal(core.shouldManageWeb("https://example.com.attacker.net/", settings), false);
+  assert.equal(core.shouldManageWeb("https://example.com.attacker.net/", settings), true);
+  assert.equal(core.isExcluded("example.com.attacker.net", "example.com"), false);
 });
 
 test("custom-site add, disable, and remove are normalized", () => {
@@ -72,7 +106,7 @@ test("Plex Web accepts only explicit exact server origins and app.plex.tv", () =
   const settings = core.normalizeSettings({ plexOrigins: ["http://192.168.1.25:32400"] });
   assert.equal(core.shouldManageWeb("https://app.plex.tv/desktop", settings), true);
   assert.equal(core.shouldManageWeb("http://192.168.1.25:32400/web", settings), true);
-  assert.equal(core.shouldManageWeb("http://192.168.1.25:32401/web", settings), false);
+  assert.equal(core.shouldManageWeb("http://192.168.1.25:32401/web", settings), true);
   assert.equal(core.webPlayerKeyFor("http://192.168.1.25:32400/web", settings), "plexWeb");
 });
 
@@ -80,7 +114,7 @@ test("player mode and target independently override or inherit global settings",
   const settings = core.normalizeSettings({ mode: "pause", targetVolumePercent: 10, playerRules: {
     youtube: { mode: "duck", targetVolumePercent: 15 }, spotifyWeb: { mode: "general" }, twitch: { mode: "pause", targetVolumePercent: 22 }
   } });
-  assert.deepEqual(core.resolvePlayerRule(settings, "youtube"), { mode: "duck", targetVolumePercent: 15, fadeOutMs: 200, fadeInMs: 350, fallbackDucking: true, fallbackToPause: true });
+  assert.deepEqual(core.resolvePlayerRule(settings, "youtube"), { mode: "duck", targetVolumePercent: 15, fadeOutMs: 200, fadeInMs: 350, fallbackDucking: false, fallbackToPause: false });
   assert.equal(core.resolvePlayerRule(settings, "spotifyWeb").mode, "pause");
   assert.equal(core.resolvePlayerRule(settings, "spotifyWeb").targetVolumePercent, 10);
   assert.equal(core.resolvePlayerRule(settings, "twitch").mode, "pause");
@@ -124,12 +158,30 @@ test("normalizes selected Windows executables by stable exact path", () => {
   assert.deepEqual(settings.windowsApps, [{ path: "C:\\Program Files\\Player\\player.exe", enabled: true, appUserModelIds: ["Player.Package_abcd"] }]);
 });
 
-test("manages only selected web platforms, custom sites, or the main web switch", () => {
+test("universal web control honors exclusions, legacy platform disables, and overrides", () => {
   const settings = core.normalizeSettings({ customSites: [{ domain: "example.com" }] });
   assert.equal(core.shouldManageWeb("https://www.youtube.com/watch?v=x", settings), true);
-  assert.equal(core.shouldManageWeb("https://music.example.com/", settings), false);
-  assert.equal(core.shouldManageWeb("https://music.example.com/", { ...settings, webPlatforms: { ...settings.webPlatforms, otherCompatible: true } }), true);
+  assert.equal(core.shouldManageWeb("https://music.example.com/", settings), true);
+  assert.equal(core.shouldManageWeb("https://music.example.com/", { ...settings, excludedDomains: "example.com" }), false);
+  assert.equal(core.shouldManageWeb("https://youtube.com/", { ...settings, webPlatforms: { ...settings.webPlatforms, youtube: false } }), false);
   assert.equal(core.shouldManageWeb("https://open.spotify.com/track/1", { ...settings, webIntegration: false }), false);
+  assert.equal(core.shouldManageWeb("https://music.example.com/", { ...settings, websiteOverrides: { ...settings.websiteOverrides, "example.com": { enabled: false } } }), false);
+});
+
+test("excluded top-level domains also block media in cross-origin child frames", () => {
+  const settings = core.normalizeSettings({ excludedDomains: "stream.example" });
+  assert.equal(core.shouldManageWeb("https://cdn.player.test/embed", settings, ["stream.example"]), false);
+  assert.equal(core.shouldManageWeb("https://cdn.player.test/embed", settings, ["other.example"]), true);
+  assert.equal(core.shouldManageWeb("https://discord.com/widget", settings, ["other.example"]), false);
+});
+
+test("migrates disabled legacy sites and custom per-site behavior", () => {
+  const settings = core.normalizeSettings({ mode: "pause", targetVolumePercent: 10, customSites: [{ domain: "example.com" }, { domain: "blocked.example", enabled: false }], playerRules: {
+    "custom:example.com": { mode: "duck", targetVolumePercent: 22, targetVolumeSource: "custom" }
+  } });
+  assert.equal(settings.excludedDomains, "blocked.example");
+  assert.deepEqual(core.resolveWebsiteOverride(settings, "https://video.example.com/watch").mode, "duck");
+  assert.equal(core.resolveWebsiteOverride(settings, "https://video.example.com/watch").targetVolumePercent, 22);
 });
 
 test("opens the standalone settings route on an already authorized HTTPS host", () => {
