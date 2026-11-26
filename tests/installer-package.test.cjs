@@ -61,7 +61,9 @@ test("authoritative installer is per-user, transactional, and verifies the activ
   assert.equal(fs.existsSync(path.join(root, "agent", "DiscordVoiceAutomation.cs")), false);
   assert.match(report, /ICE38/);
   assert.match(report, /ICE91/);
-  assert.match(report, /real MSI rollback path has not been rerun/);
+  assert.match(report, /Registry table key path rooted at `HKCU`/);
+  assert.match(report, /warnings are not suppressed/i);
+  assert.match(report, /rollback induced by a real failed MSI transaction has not been exercised/i);
 });
 
 test("MSI binary verification executes the extracted compiled executable with a strict version guard", () => {

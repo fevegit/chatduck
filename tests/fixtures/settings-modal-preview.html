@@ -12,6 +12,7 @@
   </style>
   <script src="../../src/core.js?v=277"></script>
   <script src="../../src/i18n.js?v=277"></script>
+  <script>window.AudioDuckVersion = "2.8.9";</script>
   <script src="../../src/settings-page.js?v=278"></script>
 </head>
 <body>
@@ -19,7 +20,7 @@
   <script>
     const storageKey = "audioDuckingPreviewSettings";
     const defaults = { mode: "duck", targetVolumePercent: 12, language: "en", modalSize: "large", playerRules: { plexWeb: { mode: "pause" } }, windowsApps: [{ path: "C:\\Program Files\\Plex\\Plex\\Plex.exe", enabled: true, appUserModelIds: [] }], customSites: [{ domain: "media.example.org", enabled: true }], plexOrigins: ["http://192.168.1.25:32400"] };
-    window.AudioDuckAgent = { configured: false, installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.7.6-beta.1/ChatDuck-Windows-Agent-2.7.6-beta.1-x64.msi" };
+    window.AudioDuckAgent = { configured: false, installUrl: "https://github.com/fevegit/chatduck/releases/download/v2.8.9/ChatDuck-Windows-Agent-2.8.9-x64.msi" };
     let settings = AudioDuckCore.normalizeSettings(JSON.parse(localStorage.getItem(storageKey) || JSON.stringify(defaults)));
     const page = new AudioDuckSettingsPage.SettingsPage({
       doc: document,
@@ -31,7 +32,8 @@
     window.previewAudioDuckingPage = page;
     document.querySelector("#open-settings").addEventListener("click", () => page.open());
     window.previewAudioDuckingSettings = () => settings;
-    if (new URLSearchParams(location.search).has("capture")) { document.querySelector(".demo").style.display = "none"; page.open(); }
+    const capture = new URLSearchParams(location.search);
+    if (capture.has("capture")) { document.querySelector(".demo").style.display = "none"; page.activePage = capture.get("tab") || "general"; page.open(); }
   </script>
 </body>
 </html>

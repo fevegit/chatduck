@@ -5,7 +5,7 @@ ChatDuck has no analytics, telemetry, account system, or remote control service.
 ## Data used locally
 
 - Tampermonkey stores ChatDuck preferences and its per-install agent token in the browser's userscript storage. The manager retains the legacy script identity so existing installs can update in place.
-- The optional Windows agent stores its random token, custom-site domains, and operational log under the current Windows user's local application data in `Programs/ChatGPTAudioDuckingTM`.
+- The optional Windows agent stores its pairing configuration, custom-site data, and operational log under `%LOCALAPPDATA%\ChatDuck`, outside its program files.
 - When the agent is used, ChatDuck sends selected application identifiers, media-session status, and per-app volume commands over loopback (`127.0.0.1`). The agent does not collect microphone audio, camera data, or master-volume state.
 - Excluded domains and per-site overrides stay in Tampermonkey storage. They are not sent to the local agent.
 

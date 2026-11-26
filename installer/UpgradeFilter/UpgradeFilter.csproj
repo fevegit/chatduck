@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>ChatDuck.InstallerActions</AssemblyName>
+    <RootNamespace>ChatDuck.InstallerActions</RootNamespace>
+    <Platform>x64</Platform>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Dtf.CustomAction" Version="4.0.3" />
+    <Content Include="CustomAction.config" />
+  </ItemGroup>
+</Project>

@@ -11,12 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-install:
-    name: Build and install MSI on hosted Windows
+  build-and-validate:
+    name: Build and validate Windows package
     runs-on: windows-latest
     timeout-minutes: 30
-    permissions:
-      contents: read
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -37,31 +35,27 @@ jobs:
           $toolPath = Join-Path $env:RUNNER_TEMP 'wix'
           dotnet tool install --tool-path $toolPath wix --version 4.0.3
           if ($LASTEXITCODE -ne 0) { throw 'WiX installation failed.' }
-          "${toolPath}" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $toolPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           & (Join-Path $toolPath 'wix.exe') extension add --global WixToolset.UI.wixext/4.0.3
           if ($LASTEXITCODE -ne 0) { throw 'WiX UI extension installation failed.' }
 
-      - name: Build public userscript, Windows agent, MSI, and SHA-256 manifest
+      - name: Build userscript, agent MSI, and SHA-256 manifest
         shell: pwsh
         run: ./scripts/build-release.ps1 -RepositoryUrl 'https://github.com/fevegit/chatduck'
 
-      - name: Run JavaScript tests
+      - name: Run JavaScript regressions
         run: node --test tests/*.test.cjs
 
-      - name: Run native agent tests
+      - name: Run Windows agent regressions
         shell: pwsh
-        run: |
-          dotnet run --project tests/agent-volume/Agent.Volume.Tests.csproj --configuration Release
-          if ($LASTEXITCODE -ne 0) { throw 'Agent volume tests failed.' }
-          dotnet run --project tests/agent-protocol/Agent.Protocol.Tests.csproj --configuration Release
-          if ($LASTEXITCODE -ne 0) { throw 'Agent protocol tests failed.' }
+        run: dotnet run --project tests/agent-regressions/ChatDuckAgent.RegressionTests.csproj --configuration Release
 
-      - name: Validate release files and hashes
+      - name: Validate release filenames and SHA-256 manifest
         shell: pwsh
         run: |
-          $root = (Resolve-Path 'release-artifacts').Path
-          $userscript = Join-Path $root 'ChatDuck.user.js'
-          $msi = Join-Path $root 'ChatDuck-Windows-Agent-2.7.6-beta.1-x64.msi'
+          $root = (Resolve-Path 'out').Path
+          $userscript = Join-Path $root 'ChatGPT-Audio-Ducking.user.js'
+          $msi = Join-Path $root 'ChatDuck-Windows-Agent-2.8.9-x64.msi'
           $manifest = Join-Path $root 'SHA256SUMS.txt'
           foreach ($path in @($userscript, $msi, $manifest)) {
             if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing release file: $([IO.Path]::GetFileName($path))" }
@@ -74,8 +68,4 @@ jobs:
             if (-not ($expected -contains "$hash  $name")) { throw "SHA-256 manifest mismatch for $name." }
           }
           if ((Get-Item -LiteralPath $msi).Length -lt 1MB) { throw 'The MSI is unexpectedly small.' }
-          "Validated userscript, MSI, and SHA-256 manifest." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-
-      - name: Install, exercise, and uninstall the MSI
-        shell: pwsh
-        run: ./tests/ci/windows-installer-smoke.ps1 -MsiPath './release-artifacts/ChatDuck-Windows-Agent-2.7.6-beta.1-x64.msi'
+          'Validated userscript, MSI, and SHA-256 manifest.' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append

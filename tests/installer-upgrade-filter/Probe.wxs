@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="ChatDuck upgrade-filter CA probe"
+           Manufacturer="ChatDuck contributors"
+           Version="1.0.0"
+           ProductCode="{AC54222E-90BF-4DD9-96DF-146B92273C94}"
+           UpgradeCode="{30A8DDA6-3D61-495F-82B5-6D4598C8D19D}"
+           Scope="perUser"
+           InstallerVersion="500"
+           Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="The diagnostic package cannot be downgraded." />
+    <MediaTemplate EmbedCab="yes" />
+    <Property Id="WIX_UPGRADE_DETECTED" Secure="yes" />
+    <Binary Id="UpgradeRegistrationFilter" SourceFile="$(var.UpgradeFilterDll)" />
+    <CustomAction Id="FilterDetectedUpgradeProducts" BinaryRef="UpgradeRegistrationFilter"
+                  DllEntry="FilterDetectedUpgradeProducts" Execute="immediate" Return="check" />
+    <CustomAction Id="AbortAfterFilter" Error="Intentional non-destructive probe stop after the ChatDuck upgrade-filter action." />
+    <InstallExecuteSequence>
+      <Custom Action="FilterDetectedUpgradeProducts" After="FindRelatedProducts" Condition="WIX_UPGRADE_DETECTED" />
+      <Custom Action="AbortAfterFilter" After="FilterDetectedUpgradeProducts" Condition="WIX_UPGRADE_DETECTED" />
+    </InstallExecuteSequence>
+  </Package>
+</Wix>

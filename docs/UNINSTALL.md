@@ -12,6 +12,6 @@ This removes browser-side behavior and stored settings. It does not uninstall Ta
 
 1. Open Windows **Settings → Apps → Installed apps**.
 2. Select **ChatDuck Windows Agent** and choose Uninstall.
-3. The installer stops the agent and restores any media session it manages before removing its own program files, token, custom-site list, and local log.
+3. The installer stops the agent and restores any media session it manages before removing its program files and startup entry.
 
-The uninstaller removes only the agent's own `HKCU` startup value and installation data. It does not remove other applications, browser extensions, Tampermonkey preferences, or unrelated registry values. Remove the userscript separately if you no longer want web-player control.
+Pairing and agent preferences are kept under `%LOCALAPPDATA%\ChatDuck` when the agent is uninstalled. To erase that data too, remove that folder after uninstalling. The uninstaller does not remove other applications, browser extensions, Tampermonkey preferences, or unrelated registry values. Remove the userscript separately if you no longer want web-player control.

@@ -11,6 +11,7 @@
     <MediaTemplate EmbedCab="yes" />
     <Icon Id="ChatDuckAppIcon" SourceFile="$(var.ProjectDir)\agent\assets\chatduck.ico" />
     <Binary Id="AgentRollbackHelper" SourceFile="$(var.PublishDir)\ChatGPTAudioDuckingAgent.exe" />
+    <Binary Id="UpgradeRegistrationFilter" SourceFile="$(var.UpgradeFilterDll)" />
     <Property Id="ARPPRODUCTICON" Value="ChatDuckAppIcon" />
 
     <Property Id="PREVIOUS_AGENT_EXE">
@@ -76,8 +77,15 @@
                   Execute="deferred" Impersonate="yes" Return="check" />
     <CustomAction Id="StopAgentBeforeUninstall" FileRef="AgentExeFile" ExeCommand="--shutdown"
                   Execute="immediate" Return="check" />
+    <CustomAction Id="FilterDetectedUpgradeProducts" BinaryRef="UpgradeRegistrationFilter"
+                  DllEntry="FilterDetectedUpgradeProducts" Execute="immediate" Return="check" />
+
+    <InstallUISequence>
+      <Custom Action="FilterDetectedUpgradeProducts" After="FindRelatedProducts" Condition="NOT REMOVE~=&quot;ALL&quot;" />
+    </InstallUISequence>
 
     <InstallExecuteSequence>
+      <Custom Action="FilterDetectedUpgradeProducts" After="FindRelatedProducts" Condition="NOT REMOVE~=&quot;ALL&quot;" />
       <Custom Action="RestorePreviousAgentOnRollback" Before="InstallFiles" Condition="NOT REMOVE~=&quot;ALL&quot; AND PREVIOUS_AGENT_EXE" />
       <Custom Action="StopPreviousAgent" Before="InstallInitialize" Condition="NOT REMOVE~=&quot;ALL&quot;" />
       <Custom Action="StopNewAgentOnRollback" Before="StartAndVerifyAgent" Condition="NOT REMOVE~=&quot;ALL&quot;" />

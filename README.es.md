@@ -1,58 +1,86 @@
-# ChatDuck
+<div align="center">
+  <img src="agent/assets/chatduck-duck.svg" width="112" alt="Logotipo de ChatDuck">
+  <h1>ChatDuck</h1>
+  <p><strong>Mantén el audio bajo control mientras dictas a ChatGPT.</strong></p>
+  <p>
+    <a href="https://github.com/fevegit/chatduck/releases/latest"><img alt="Última versión" src="https://img.shields.io/github/v/release/fevegit/chatduck?style=flat&label=versión"></a>
+    <a href="LICENSE"><img alt="Licencia MIT" src="https://img.shields.io/github/license/fevegit/chatduck?style=flat"></a>
+    <img alt="Userscript de navegador y agente opcional de Windows" src="https://img.shields.io/badge/plataforma-navegador%20%2B%20Windows-5865f2?style=flat">
+    <a href="https://github.com/fevegit/chatduck/releases"><img alt="Descargas de GitHub" src="https://img.shields.io/github/downloads/fevegit/chatduck/total?style=flat&label=descargas"></a>
+  </p>
+  <p><a href="README.md">Read in English</a> · <a href="https://ko-fi.com/fevee">Apoya en Ko-fi</a></p>
+</div>
 
-**Controla la reproducción web mientras dictas a ChatGPT.**
+---
 
-> **Versión local del producto: 2.8.9.** Esta compilación consolidada se ha preparado localmente y no se ha publicado.
+## Instalar
 
-[**Instalar ChatDuck (userscript)**](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) · [English](README.md) · [Reportar un fallo](https://github.com/fevegit/chatduck/issues)
+<p>
+  <a href="https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js"><img alt="Instalar el userscript de ChatDuck" src="https://img.shields.io/badge/Instalar%20userscript-Tampermonkey-7b5cff?style=for-the-badge"></a>
+  &nbsp;
+  <a href="https://github.com/fevegit/chatduck/releases/download/v2.8.9/ChatDuck-Windows-Agent-2.8.9-x64.msi"><img alt="Descargar el agente opcional de Windows" src="https://img.shields.io/badge/Agente%20opcional%20Windows-Descargar%20MSI-30313a?style=for-the-badge"></a>
+</p>
 
-## Empezar — 2 pasos
+1. Instala [Tampermonkey](https://www.tampermonkey.net/) en un navegador de escritorio compatible.
+2. Abre **Instalar userscript** y confirma la instalación en Tampermonkey.
+3. Abre ChatDuck desde el menú de Tampermonkey para configurar la reproducción.
 
-1. Instala [Tampermonkey](https://www.tampermonkey.net/) para Firefox, Chrome o Edge (omite este paso si ya lo tienes).
-2. [Instala ChatDuck](https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js) y confirma la instalación en Tampermonkey.
+Se conservan deliberadamente el nombre y el espacio de nombres originales del userscript para que Tampermonkey actualice la instalación existente en vez de crear otra.
 
-El Modo navegador funciona sin aplicación de Windows, token, permiso de micrófono ni emparejamiento. Las instalaciones nuevas empiezan con Ducking; Control web universal gestiona audio y vídeo HTML5 compatibles en páginas HTTP y HTTPS del mismo navegador. Se conserva el modo guardado en instalaciones existentes. Excluye ChatGPT y las aplicaciones de comunicación de forma predeterminada. Pausa o Ducking y el volumen son globales, con reglas por sitio y exclusiones de dominios.
+## Qué hace
 
-Abre los ajustes desde **Tampermonkey → ChatGPT Audio Ducking → Open ChatDuck settings**. El nombre y el espacio de nombres heredados del userscript se conservan deliberadamente para actualizar instalaciones existentes sin crear duplicados. Tampermonkey guarda tus preferencias.
+ChatDuck coordina la reproducción de medios compatibles con el dictado de voz de ChatGPT. El Modo navegador funciona por sí solo. El Agente opcional de Windows añade controles para aplicaciones multimedia de escritorio seleccionadas.
 
-![Panel de ajustes de ChatDuck](docs/images/settings-panel.png)
+![Ajustes generales de ChatDuck 2.8.9](docs/images/chatduck-2.8.9-general.png)
 
-## Modo navegador
+<sub>Captura del preview local aislado con el código Native de ajustes 2.8.9; no procede de una sesión de usuario.</sub>
 
-El userscript controla directamente medios HTML5 estándar. No necesitas el agente de Windows para:
+### Modo navegador
 
-| Reproductor | Modo navegador |
-| --- | --- |
-| Sitios conocidos o desconocidos | Controla elementos HTMLMediaElement con volumen modificable, salvo dominios excluidos |
-| Iframes del mismo dominio y de otros | Cada iframe ejecuta su propio controlador aislado |
-| Shadow DOM abierto | Se analiza al inicio y cuando se añade su elemento anfitrión |
+El userscript controla audio y vídeo HTML5 compatibles del navegador, incluidos sitios que añadas o mantengas habilitados para el control universal. Elige **Pausar** o **Ducking**, ajusta el volumen atenuado y configura reglas o exclusiones por sitio desde el panel de ajustes Native. Cada frame gestiona su propio documento. ChatGPT y los sitios de comunicación se excluyen del control multimedia de forma predeterminada.
 
-Los Shadow DOM cerrados y los reproductores que no exponen medios HTML controlables aún no son compatibles. Una alternativa optativa de Tampermonkey puede silenciar una pestaña que use solo Web Audio, pero silencia toda la pestaña en vez de atenuar y aún no se ha verificado en LibreWolf. No se intercepta Web Audio ni se modifican APIs globales. Falta probar reproducción real en los servicios.
+No intercepta Web Audio ni modifica APIs de la página. No controla Shadow DOM cerrado, reproductores que no exponen medios HTML controlables ni reproducción exclusiva de Web Audio. La alternativa opcional de silenciar pestaña de Tampermonkey silencia la pestaña entera y es independiente de la atenuación por medio.
 
-Incidencia externa conocida: [Brave/Chromium y ChromeWideEchoCancellation](docs/known-issues/chromium-wide-echo-cancellation.md). ChatDuck no cambia esta función automáticamente.
+### Agente opcional de Windows
 
-## Agente opcional de Windows
+![Ajustes de aplicaciones Windows de ChatDuck 2.8.9](docs/images/chatduck-2.8.9-windows.png)
 
-El agente hace falta para Spotify de escritorio, Plex para Windows u otro reproductor de escritorio compatible. El Modo navegador sigue funcionando sin él.
+<sub>El preview utiliza datos de demostración y muestra el agente Windows sin emparejar.</sub>
 
-1. Usa el [MSI local de ChatDuck Windows Agent 2.8.9](out/ChatDuck-Windows-Agent-2.8.9-x64.msi).
-2. Instálalo y abre **ChatDuck Agent** desde el menú Inicio de Windows.
-3. Sigue las instrucciones de emparejamiento que muestra el agente.
+El agente añade controles por aplicación para sesiones multimedia compatibles de Windows, incluidos reproductores de escritorio como Spotify y Plex. Selecciona aplicaciones detectadas o añade un ejecutable; después elige Pausar o Ducking y configura el volumen. Pausar depende de que la aplicación admita controles multimedia; Ducking requiere una sesión de audio accesible. El agente no controla funciones arbitrarias de las aplicaciones ni el volumen maestro de Windows.
 
-Después de emparejarlo, abre **Ajustes de ChatDuck → Advanced → Windows apps** para seleccionar aplicaciones detectadas o añadir un `.exe` local, activar o desactivar cada una y configurar Pausar o Ducking y el volumen por aplicación. El agente controla sesiones multimedia o de audio compatibles seleccionadas; no controla cualquier función de una aplicación. **Ducking** necesita una sesión de audio de Windows accesible; **Pausar** de verdad necesita controles multimedia compatibles. Si no se puede pausar, puede aplicarse una alternativa de reducción de volumen según la configuración. Las aplicaciones protegidas, incluidos navegadores y herramientas de comunicación, están excluidas deliberadamente. El creador probó versiones anteriores con Spotify de escritorio y Plex para Windows; los demás ejecutables personalizados no se han verificado.
+El agente es opcional y se ejecuta como el usuario conectado. Se comunica con el userscript mediante loopback y se empareja con un secreto propio de la instalación. Instala el MSI x64 solo si necesitas controlar aplicaciones de escritorio. Requiere Windows 10 versión 1809 o posterior y **.NET 10 Desktop Runtime (x64)**. El MSI **no está firmado actualmente**. La instalación y actualización se verificaron en el equipo Windows del responsable; esto no equivale a pruebas exhaustivas en otros equipos o hardware.
 
-La restauración del volumen depende de que la sesión de audio siga disponible y su estado pueda recuperarse. El MSI no está firmado y puede mostrar una advertencia de seguridad de Windows. La instalación limpia, actualización, reinicio, desinstalación, emparejamiento y compatibilidad en otros equipos aún no se han verificado para esta beta. El instalador es por usuario, no necesita permisos de administrador y no activa el inicio con Windows de forma predeterminada.
+## Compatibilidad y requisitos
 
-Consulta la [seguridad del agente](docs/SECURITY.md), los [permisos](docs/PERMISSIONS.md) y la [desinstalación](docs/UNINSTALL.md).
+- Navegador de escritorio compatible con Tampermonkey, como Chrome, Edge o Firefox.
+- Entrada de voz de ChatGPT para coordinar la reproducción con el dictado.
+- Opcional: Windows 10 versión 1809 o posterior x64 y .NET 10 Desktop Runtime x64 para el agente.
+- Una sesión multimedia compatible para controlar aplicaciones de escritorio.
 
-## Estado de la compilación
+El userscript no solicita acceso al micrófono ni a la cámara. ChatGPT gestiona la entrada de voz.
 
-- El creador probó manualmente la versión anterior 2.7.4 con ChatGPT, Spotify Web y de escritorio, YouTube, Plex Web y Plex para Windows (Ducking). Esto no significa que la beta actual se haya verificado en otros equipos.
-- La compilación local 2.8.9 no se ha publicado; consulta `out/validation-report.md` para ver la compilación y sus pruebas.
-- Para reportar un fallo, indica navegador, versión de Windows cuando corresponda, reproductor y pasos para reproducirlo. No incluyas códigos de emparejamiento, tokens, rutas personales ni logs sin revisar.
+## Configuración
 
-## Privacidad, desinstalación y apoyo
+Abre **Tampermonkey → ChatGPT Audio Ducking → Open ChatDuck settings**. Elige el modo general y el volumen; después configura reglas por sitio, exclusiones, comportamiento del navegador y, si está emparejado, las aplicaciones Windows seleccionadas. Tampermonkey guarda las preferencias localmente; el emparejamiento y los ajustes del agente se guardan para el usuario actual de Windows.
 
-ChatDuck funciona localmente y no tiene telemetría, funciones de pago ni cuentas. El userscript no solicita acceso al micrófono. Para quitar la integración web, elimina **ChatGPT Audio Ducking** desde Tampermonkey. Desinstala el agente opcional desde Configuración de Windows → Aplicaciones. Más información en [Privacidad](docs/PRIVACY.md) y la [guía completa de desinstalación](docs/UNINSTALL.md).
+## Privacidad y seguridad
 
-ChatDuck es gratuito y de código abierto bajo la [licencia MIT](LICENSE). Donaciones voluntarias: [Ko-fi](https://ko-fi.com/fevee).
+ChatDuck funciona localmente: no incluye analítica, telemetría, cuenta ni funciones de pago. El userscript controla medios de la página desde su contexto aislado. El agente opcional solo escucha en `127.0.0.1`, usa órdenes autenticadas con HMAC tras el emparejamiento y no captura audio del micrófono. Consulta [Privacidad](docs/PRIVACY.md), [Permisos](docs/PERMISSIONS.md) y [Seguridad](docs/SECURITY.md).
+
+## Desinstalación
+
+- **Navegador:** elimina **ChatGPT Audio Ducking** desde el panel de Tampermonkey.
+- **Agente Windows:** desinstala **ChatDuck Windows Agent** desde Configuración de Windows → Aplicaciones.
+
+Consulta la [guía completa](docs/UNINSTALL.md).
+
+## Compilar desde el código fuente
+
+El repositorio incluye el código, las pruebas de regresión y los pasos de compilación. Consulta [Desarrollo](docs/DEVELOPMENT.md). Las descargas de cada release incluyen un manifiesto SHA-256.
+
+## Apoyo
+
+ChatDuck es gratuito y de código abierto bajo la [licencia MIT](LICENSE). Las donaciones son voluntarias y no desbloquean funciones.
+
+<p align="center"><a href="https://ko-fi.com/fevee"><img alt="Apoya ChatDuck en Ko-fi" src="https://img.shields.io/badge/Ko--fi-apoyo%20voluntario-ff5e5b?style=for-the-badge&logo=ko-fi&logoColor=white"></a></p>

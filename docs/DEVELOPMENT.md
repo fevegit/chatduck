@@ -1,25 +1,38 @@
-# Desarrollo y estructura
+# Development and release build
 
-## Fuente de verdad
+## Source of truth
 
-- `src/` contiene los módulos fuente del userscript.
-- `agent/` contiene el agente Windows, coordinación multimedia y recursos del producto.
-- `tests/` contiene las pruebas fuente del producto y sus fixtures.
-- `ChatGPT-Audio-Ducking.user.js` es el bundle de distribución versionado que enlazan los README y que utiliza el empaquetado actual. No editarlo a mano.
-- El código fuente correspondiente a ChatDuck 2.8.8-rc.1 queda fijado por el commit local de restauración. No se le asigna una correspondencia Git con versiones alpha anteriores.
+- `src/` contains the userscript modules; `ChatGPT-Audio-Ducking.user.js` is the reviewed, versioned distribution bundle.
+- `agent/` contains the optional Windows Agent and WiX product authoring.
+- `installer/` contains the Windows Installer custom action source.
+- `tests/` contains JavaScript, agent, package, and installer regression tests and isolated fixtures.
+- `scripts/build-public.ps1` builds the userscript. `scripts/build-installer.ps1` is the authoritative MSI and release-package builder; `scripts/build-release.ps1` is its release entry point.
 
-## Construcción
+## Build requirements
 
-`scripts/build-public.ps1` ensambla el userscript. `scripts/build-installer.ps1` es el punto de entrada autoritativo para generar el userscript y el MSI per-user framework-dependent coherentes; escribe solo el paquete en `out/` y reserva `out/.work/` para intermedios. El bundle versionado de la raíz sigue siendo el archivo de distribución que consumen los enlaces públicos.
+- Windows x64, PowerShell 7, Node.js 22, and .NET 10 SDK.
+- WiX Toolset 4.0.3 with `WixToolset.UI.wixext/4.0.3`.
+- .NET Framework 4.8 for the non-destructive Windows Installer custom-action probe.
 
-Los scripts de construcción y migración histórica no forman parte del flujo normal. Se conservan los archivos fuente ya versionados; los generadores de candidatos y las automatizaciones QA/migración sin seguimiento se excluyen de este punto de restauración.
+Install the pinned WiX tools, then build:
 
-## Instalación
+```powershell
+dotnet tool install --tool-path .tools wix --version 4.0.3
+./.tools/wix.exe extension add --global WixToolset.UI.wixext/4.0.3
+./scripts/build-release.ps1 -RepositoryUrl 'https://github.com/fevegit/chatduck'
+```
 
-El flujo activo es un único MSI per-user, framework-dependent y sin bootstrapper. El MSI comprueba .NET 10 Desktop Runtime antes de modificar el sistema, mantiene Run bajo HKCU, detiene ordenadamente el agente anterior y solo completa si el nuevo proceso responde por protocolo autenticado con versión y ruta coincidentes. Las preferencias y el emparejamiento están en `%LOCALAPPDATA%\ChatDuck`, separados de binarios.
+The script derives the product version from `agent/AudioDuckingAgent.csproj`, performs package and installer-action checks, and writes the userscript, per-user framework-dependent x64 MSI, and `SHA256SUMS.txt` only to `out/` (intermediates to `out/.work/`). Review the checksum manifest and validation output before release. The MSI is unsigned.
 
-La detección/migración de antiguas instalaciones per-user o per-machine debe ser una operación excepcional e independiente del MSI normal. No se incluye en el actualizador habitual; si un proceso legado conserva el mutex global de instancia, la verificación de salud falla y MSI revierte en vez de declarar éxito.
+## Tests
 
-## Referencias locales preservadas
+```powershell
+node --test tests/*.test.cjs
+dotnet run --project tests/agent-regressions/ChatDuckAgent.RegressionTests.csproj --configuration Release
+```
 
-La copia estable `2.8.3-rc.1`, el paquete de referencia alpha.6 y la instantánea verificable del estado fuente están fuera del árbol de trabajo, en el archivo privado de consolidación de ChatDuck. Alpha.6 se conserva como artefacto, sin atribuirle un commit o una correspondencia exacta con el estado fuente actual.
+The build script also compiles and runs installer upgrade-filter regressions and a non-destructive Windows Installer custom-action probe. These checks do not replace testing on other Windows hardware or with each supported media application.
+
+## Installer model
+
+Normal installation and updates use one per-user MSI. Preferences and pairing are stored separately from the installed program files. Exceptional migration from legacy installation contexts is outside the routine MSI flow. See [Windows installer](installer-peruser.md).
