@@ -10,11 +10,11 @@
 <p align="center"><sub>Promotional illustration; the app panel in the artwork is not a product screenshot.</sub></p>
 
 <p align="center">
-  <a href="https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js"><img alt="Install the ChatDuck userscript" src="https://img.shields.io/badge/Install%20userscript-Tampermonkey-7b5cff?style=for-the-badge"></a>
-  <a href="https://github.com/fevegit/chatduck/releases/download/v2.8.9/ChatDuck-Windows-Agent-2.8.9-x64.msi"><img alt="Download the optional Windows Agent" src="https://img.shields.io/badge/Optional%20Windows%20Agent-Download%20MSI-30313a?style=for-the-badge"></a>
+  <a href="https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js"><img alt="Install the ChatDuck userscript" src="docs/images/cta-install-en.svg"></a>
+  <a href="https://github.com/fevegit/chatduck/releases/download/v2.8.9/ChatDuck-Windows-Agent-2.8.9-x64.msi"><img alt="Download the optional Windows Agent" src="docs/images/cta-agent-en.svg"></a>
 </p>
 <p align="center">
-  <a href="https://ko-fi.com/fevee"><img alt="Voluntary Ko-fi support" src="https://img.shields.io/badge/Ko--fi-optional%20support-ff5e5b?style=for-the-badge&logo=ko-fi&logoColor=white"></a>
+  <a href="https://ko-fi.com/fevee"><img alt="Voluntary Ko-fi support" src="docs/images/cta-kofi-en.svg"></a>
 </p>
 
 ## What it does

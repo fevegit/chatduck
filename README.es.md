@@ -10,11 +10,11 @@
 <p align="center"><sub>Ilustración promocional; el panel que aparece es una maqueta, no una captura del programa.</sub></p>
 
 <p align="center">
-  <a href="https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js"><img alt="Instalar el userscript de ChatDuck" src="https://img.shields.io/badge/Instalar%20userscript-Tampermonkey-7b5cff?style=for-the-badge"></a>
-  <a href="https://github.com/fevegit/chatduck/releases/download/v2.8.9/ChatDuck-Windows-Agent-2.8.9-x64.msi"><img alt="Descargar el agente opcional de Windows" src="https://img.shields.io/badge/Agente%20opcional%20Windows-Descargar%20MSI-30313a?style=for-the-badge"></a>
+  <a href="https://raw.githubusercontent.com/fevegit/chatduck/main/ChatGPT-Audio-Ducking.user.js"><img alt="Instalar el userscript de ChatDuck" src="docs/images/cta-install-es.svg"></a>
+  <a href="https://github.com/fevegit/chatduck/releases/download/v2.8.9/ChatDuck-Windows-Agent-2.8.9-x64.msi"><img alt="Descargar el agente opcional de Windows" src="docs/images/cta-agent-es.svg"></a>
 </p>
 <p align="center">
-  <a href="https://ko-fi.com/fevee"><img alt="Apoyo voluntario en Ko-fi" src="https://img.shields.io/badge/Ko--fi-apoyo%20voluntario-ff5e5b?style=for-the-badge&logo=ko-fi&logoColor=white"></a>
+  <a href="https://ko-fi.com/fevee"><img alt="Apoyo voluntario en Ko-fi" src="docs/images/cta-kofi-es.svg"></a>
 </p>
 
 ## Qué hace
