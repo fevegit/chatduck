@@ -2,10 +2,7 @@
   <img src="docs/images/chatduck-logo.webp" width="132" alt="ChatDuck logo">
   <h1>ChatDuck</h1>
   <p><strong>Keep your audio in balance while you dictate to ChatGPT.</strong></p>
-  <p>
-    <a href="https://github.com/fevegit/chatduck/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/fevegit/chatduck?style=flat&label=release"></a>
-    <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/fevegit/chatduck?style=flat"></a>
-  </p>
+  <p><a href="https://github.com/fevegit/chatduck/releases/latest">v2.8.9</a> · <a href="LICENSE">MIT License</a> · Browser + optional Windows Agent</p>
   <p><a href="README.es.md">Español</a></p>
 </div>
 
