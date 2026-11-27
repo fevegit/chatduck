@@ -23,11 +23,11 @@ ChatDuck coordinates compatible media playback with ChatGPT voice dictation. **B
 
 ## In the app
 
-These captures show the actual Native settings UI from the 2.8.9 code, rendered in an isolated local preview with demo settings. They are separate from the promotional artwork above and contain no live user data.
+Fresh dark-theme captures of the actual 2.8.9 userscript UI, rendered in isolated Chromium by executing the exact release bundle. The Windows page uses a demo app entry; the preview has no paired agent and contains no personal data. The promotional artwork above is separate from these product screenshots.
 
-![ChatDuck 2.8.9 general settings UI](docs/images/chatduck-settings-general.webp)
+![ChatDuck 2.8.9 General settings, dark theme, English](docs/images/chatduck-2.8.9-settings-general-dark-en.webp)
 
-![ChatDuck 2.8.9 Windows apps settings UI](docs/images/chatduck-settings-windows.webp)
+![ChatDuck 2.8.9 Windows apps settings, dark theme, English](docs/images/chatduck-2.8.9-settings-windows-dark-en.webp)
 
 ## Browser Mode
 

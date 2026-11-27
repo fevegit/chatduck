@@ -23,11 +23,11 @@ ChatDuck coordina la reproducción multimedia compatible con el dictado de voz d
 
 ## La interfaz
 
-Estas capturas muestran la interfaz Native real de ajustes del código 2.8.9, renderizada en un preview local aislado con datos de demostración. Son distintas de la ilustración promocional superior y no contienen datos de usuarios.
+Capturas nuevas del tema oscuro de la interfaz real del userscript 2.8.9, renderizadas en Chromium aislado ejecutando el paquete exacto de la release. La pestaña Windows usa una aplicación de demostración; la vista previa no está emparejada con ningún agente ni contiene datos personales. La ilustración promocional anterior es distinta de estas capturas del producto.
 
-![Interfaz de ajustes generales de ChatDuck 2.8.9](docs/images/chatduck-settings-general.webp)
+![Ajustes generales de ChatDuck 2.8.9, tema oscuro e inglés](docs/images/chatduck-2.8.9-settings-general-dark-en.webp)
 
-![Interfaz de aplicaciones Windows de ChatDuck 2.8.9](docs/images/chatduck-settings-windows.webp)
+![Ajustes de aplicaciones Windows de ChatDuck 2.8.9, tema oscuro e inglés](docs/images/chatduck-2.8.9-settings-windows-dark-en.webp)
 
 ## Modo navegador
 
